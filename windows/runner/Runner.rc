@@ -95,7 +95,7 @@ BEGIN
             VALUE "InternalName", "keifu_ki" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2025 dev.bonsanbec. All rights reserved." "\0"
             VALUE "OriginalFilename", "keifu_ki.exe" "\0"
-            VALUE "ProductName", "keifu_ki" "\0"
+            VALUE "ProductName", "Keifu" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

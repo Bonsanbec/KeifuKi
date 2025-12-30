@@ -5,7 +5,7 @@
 // 'flutter create' template.
 
 // The application's name. By default this is also the title of the Flutter window.
-PRODUCT_NAME = keifu_ki
+PRODUCT_NAME = Keifu
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = dev.bonsanbec.keifuKi
