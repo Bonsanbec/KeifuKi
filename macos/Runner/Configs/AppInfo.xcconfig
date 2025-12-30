@@ -8,7 +8,7 @@
 PRODUCT_NAME = keifu_ki
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.keifuKi
+PRODUCT_BUNDLE_IDENTIFIER = dev.bonsanbec.keifuKi
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2025 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2025 dev.bonsanbec. All rights reserved.

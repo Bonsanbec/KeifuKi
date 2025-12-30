@@ -89,11 +89,11 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
+            VALUE "CompanyName", "dev.bonsanbec" "\0"
             VALUE "FileDescription", "keifu_ki" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "keifu_ki" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 dev.bonsanbec. All rights reserved." "\0"
             VALUE "OriginalFilename", "keifu_ki.exe" "\0"
             VALUE "ProductName", "keifu_ki" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
