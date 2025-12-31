@@ -75,7 +75,7 @@ class _SubmissionRitualScreenState extends State<SubmissionRitualScreen>
     switch (widget.mediaType) {
       case 'audio':
         return 'Gracias por tu voz.';
-      case 'photo':
+      case 'image':
         return 'Gracias por esta imagen.';
       case 'video':
         return 'Gracias por este recuerdo.';
