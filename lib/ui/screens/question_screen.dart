@@ -7,6 +7,7 @@ import 'package:flutter/cupertino.dart';
 import '../../services/question_selector.dart';
 import '../widgets/large_text.dart';
 import '../widgets/big_button.dart';
+import 'backup_ritual_screen.dart';
 import 'capture_screen.dart';
 import 'responses_archive_screen.dart';
 
@@ -99,31 +100,12 @@ class _QuestionScreenState extends State<QuestionScreen> {
                       'Respaldar en Google Drive',
                       style: TextStyle(color: CupertinoColors.systemGrey),
                     ),
-                    onPressed: () async {
-                      try {
-                        final path = await BackupService.createSnapshot();
-                        await DriveBackupService.uploadSnapshot(File(path));
-
-                        if (!context.mounted) return;
-
-                        showCupertinoDialog(
-                          context: context,
-                          builder: (_) => CupertinoAlertDialog(
-                            title: const Text('Respaldo completado'),
-                            content: const Text(
-                              'Tu memoria fue guardada en Google Drive.',
-                            ),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('Aceptar'),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                        );
-                      } catch (e) {
-                        // Manejo sobrio de error / cancelación
-                      }
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => const BackupRitualScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
