@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:uuid/uuid.dart';
 
@@ -86,13 +88,19 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           _saving = true;
         });
 
+        final storedPath = await MediaStore.importFile(
+          responseId: responseId,
+          type: MediaType.audio,
+          source: File(_mediaFilePath!),
+        );
+
         final entry = ResponseEntry(
           id: responseId,
           questionId: widget.question.id,
           createdAt: now,
           mediaType: widget.mediaType.name,
           durationSeconds: _durationSeconds,
-          filePath: _mediaFilePath!,
+          filePath: storedPath,
         );
 
         final db = await AppDatabase.instance;
@@ -119,13 +127,19 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           _saving = true;
         });
 
+        final storedPath = await MediaStore.importFile(
+          responseId: responseId,
+          type: MediaType.image,
+          source: File(_mediaFilePath!),
+        );
+
         final entry = ResponseEntry(
           id: responseId,
           questionId: widget.question.id,
           createdAt: now,
           mediaType: widget.mediaType.name,
           durationSeconds: null,
-          filePath: _mediaFilePath!,
+          filePath: storedPath,
         );
 
         final db = await AppDatabase.instance;
@@ -151,13 +165,19 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           _saving = true;
         });
 
+        final storedPath = await MediaStore.importFile(
+          responseId: responseId,
+          type: MediaType.video,
+          source: File(_mediaFilePath!),
+        );
+
         final entry = ResponseEntry(
           id: responseId,
           questionId: widget.question.id,
           createdAt: now,
           mediaType: widget.mediaType.name,
           durationSeconds: null,
-          filePath: _mediaFilePath!,
+          filePath: storedPath,
         );
 
         final db = await AppDatabase.instance;

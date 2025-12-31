@@ -23,6 +23,7 @@ class BackupService {
   /// Returns the path to the generated archive.
   static Future<String> createSnapshot() async {
     final Directory appDir = await getApplicationDocumentsDirectory();
+    print(Directory('${appDir.path}/media').listSync(recursive: true));
     final Directory backupDir =
         Directory(join(appDir.path, _backupFolderName));
 
@@ -36,21 +37,33 @@ class BackupService {
     final String archivePath =
         join(backupDir.path, 'snapshot_$timestamp.zip');
 
-    final encoder = ZipFileEncoder();
-    encoder.create(archivePath);
+    final Archive archive = Archive();
 
+    // Add database file as 'app.db'
     final File dbFile = File(join(appDir.path, _databaseFileName));
     if (await dbFile.exists()) {
-      encoder.addFile(dbFile);
+      final List<int> dbBytes = await dbFile.readAsBytes();
+      archive.addFile(ArchiveFile(_databaseFileName, dbBytes.length, dbBytes));
     }
 
-    final Directory mediaDir =
-        Directory(join(appDir.path, _mediaFolderName));
+    // Add media directory files recursively
+    final Directory mediaDir = Directory(join(appDir.path, _mediaFolderName));
     if (await mediaDir.exists()) {
-      encoder.addDirectory(mediaDir);
+      await for (FileSystemEntity entity in mediaDir.list(recursive: true)) {
+        if (entity is File) {
+          final String fullPath = entity.path;
+          final List<int> fileBytes = await entity.readAsBytes();
+          final String relativePath = fullPath.substring(appDir.path.length + 1);
+          archive.addFile(ArchiveFile(relativePath, fileBytes.length, fileBytes));
+        }
+      }
     }
 
-    encoder.close();
+    final ZipEncoder encoder = ZipEncoder();
+    final OutputFileStream outputStream = OutputFileStream(archivePath);
+    encoder.encode(archive, output: outputStream);
+    await outputStream.close();
+
     return archivePath;
   }
 
