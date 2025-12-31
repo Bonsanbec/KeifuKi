@@ -23,7 +23,6 @@ class BackupService {
   /// Returns the path to the generated archive.
   static Future<String> createSnapshot() async {
     final Directory appDir = await getApplicationDocumentsDirectory();
-    print(Directory('${appDir.path}/media').listSync(recursive: true));
     final Directory backupDir =
         Directory(join(appDir.path, _backupFolderName));
 
