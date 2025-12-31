@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:Keifu/services/backup_service.dart';
+import 'package:Keifu/services/drive_backup_service.dart';
 import 'package:flutter/cupertino.dart';
 
 import '../../services/question_selector.dart';
@@ -25,9 +29,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('KeifuKi'),
-      ),
+      navigationBar: const CupertinoNavigationBar(middle: Text('KeifuKi')),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -43,7 +45,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     if (snapshot.data != null) {
                       return LargeText(snapshot.data!.text);
                     } else {
-                      return const LargeText('No hay preguntas disponibles por ahora.');
+                      return const LargeText(
+                        'No hay preguntas disponibles por ahora.',
+                      );
                     }
                   } else {
                     return const LargeText('Error loading question');
@@ -61,7 +65,8 @@ class _QuestionScreenState extends State<QuestionScreen> {
                             ? () async {
                                 await Navigator.of(context).push(
                                   CupertinoPageRoute(
-                                    builder: (_) => CaptureScreen(question: snapshot.data!),
+                                    builder: (_) =>
+                                        CaptureScreen(question: snapshot.data!),
                                   ),
                                 );
                                 setState(() {
@@ -85,6 +90,40 @@ class _QuestionScreenState extends State<QuestionScreen> {
                           builder: (_) => const ResponsesArchiveScreen(),
                         ),
                       );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text(
+                      'Respaldar en Google Drive',
+                      style: TextStyle(color: CupertinoColors.systemGrey),
+                    ),
+                    onPressed: () async {
+                      try {
+                        final path = await BackupService.createSnapshot();
+                        await DriveBackupService.uploadSnapshot(File(path));
+
+                        if (!context.mounted) return;
+
+                        showCupertinoDialog(
+                          context: context,
+                          builder: (_) => CupertinoAlertDialog(
+                            title: const Text('Respaldo completado'),
+                            content: const Text(
+                              'Tu memoria fue guardada en Google Drive.',
+                            ),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('Aceptar'),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        );
+                      } catch (e) {
+                        // Manejo sobrio de error / cancelación
+                      }
                     },
                   ),
                 ],
