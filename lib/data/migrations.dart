@@ -3,7 +3,7 @@
 /// This file defines the canonical database structure.
 /// SQL is kept explicit and readable on purpose.
 class Migrations {
-  static const int currentVersion = 1;
+  static const int currentVersion = 2;
 
   static const List<String> v1 = [
     '''
@@ -28,10 +28,17 @@ class Migrations {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
-    '''
+    ''',
   ];
 
-  static List<List<String>> get all => [
-        v1,
-      ];
+  static const List<String> v2 = [
+    '''
+    ALTER TABLE responses ADD COLUMN growth_metadata_json TEXT;
+    ''',
+    '''
+    ALTER TABLE responses ADD COLUMN last_reviewed_at INTEGER;
+    ''',
+  ];
+
+  static List<List<String>> get all => [v1, v2];
 }

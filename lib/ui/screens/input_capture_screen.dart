@@ -6,9 +6,11 @@ import 'package:uuid/uuid.dart';
 import '../../domain/enums.dart';
 import '../../domain/response.dart';
 import '../../services/media_store.dart';
-import '../../data/database.dart';
 import '../../services/question_selector.dart';
 import '../../data/question_usage_dao.dart';
+import '../../data/response_dao.dart';
+import '../../services/response_growth_service.dart';
+import '../../services/tree_state_service.dart';
 import '../widgets/capture/text_input_capture.dart';
 import '../widgets/capture/audio_input_capture.dart';
 import '../widgets/capture/photo_input_capture.dart';
@@ -35,6 +37,49 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
   String? _mediaFilePath;
   int? _durationSeconds;
 
+  Future<void> _persistAndExit({
+    required String responseId,
+    required String filePath,
+    required int? durationSeconds,
+    String? identityText,
+    int? textLength,
+  }) async {
+    final now = DateTime.now();
+
+    final metadata = ResponseGrowthService.buildMetadata(
+      questionId: widget.question.id,
+      questionCategory: widget.question.category,
+      mediaType: widget.mediaType.name,
+      durationSeconds: durationSeconds,
+      textLength: textLength,
+    );
+
+    final entry = ResponseEntry(
+      id: responseId,
+      questionId: widget.question.id,
+      createdAt: now,
+      mediaType: widget.mediaType.name,
+      durationSeconds: durationSeconds,
+      filePath: filePath,
+      growthMetadata: metadata,
+    );
+
+    await ResponseDao.insert(entry);
+    await QuestionUsageDao.recordAnswer(widget.question.id);
+    await TreeStateService.registerResponse(
+      response: entry,
+      identityText: identityText,
+    );
+
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      CupertinoPageRoute(
+        builder: (_) =>
+            SubmissionRitualScreen(mediaType: widget.mediaType.name),
+      ),
+    );
+  }
+
   Future<void> _saveResponse() async {
     String? filePath;
 
@@ -44,7 +89,6 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
         if (text.isEmpty) return;
 
         final responseId = const Uuid().v4();
-        final now = DateTime.now();
 
         setState(() {
           _saving = true;
@@ -55,26 +99,12 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           content: text,
         );
 
-        final entry = ResponseEntry(
-          id: responseId,
-          questionId: widget.question.id,
-          createdAt: now,
-          mediaType: widget.mediaType.name,
-          durationSeconds: null,
+        await _persistAndExit(
+          responseId: responseId,
           filePath: filePath,
-        );
-
-        final db = await AppDatabase.instance;
-        await db.insert('responses', entry.toMap());
-        await QuestionUsageDao.recordAnswer(widget.question.id);
-
-        if (!mounted) return;
-
-        Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(
-            builder: (_) =>
-                SubmissionRitualScreen(mediaType: widget.mediaType.name),
-          ),
+          durationSeconds: null,
+          identityText: text,
+          textLength: text.length,
         );
         break;
 
@@ -82,7 +112,6 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
         if (_mediaFilePath == null) return;
 
         final responseId = const Uuid().v4();
-        final now = DateTime.now();
 
         setState(() {
           _saving = true;
@@ -94,26 +123,10 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           source: File(_mediaFilePath!),
         );
 
-        final entry = ResponseEntry(
-          id: responseId,
-          questionId: widget.question.id,
-          createdAt: now,
-          mediaType: widget.mediaType.name,
-          durationSeconds: _durationSeconds,
+        await _persistAndExit(
+          responseId: responseId,
           filePath: storedPath,
-        );
-
-        final db = await AppDatabase.instance;
-        await db.insert('responses', entry.toMap());
-        await QuestionUsageDao.recordAnswer(widget.question.id);
-
-        if (!mounted) return;
-
-        Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(
-            builder: (_) =>
-                SubmissionRitualScreen(mediaType: widget.mediaType.name),
-          ),
+          durationSeconds: _durationSeconds,
         );
         break;
 
@@ -121,7 +134,6 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
         if (_mediaFilePath == null) return;
 
         final responseId = const Uuid().v4();
-        final now = DateTime.now();
 
         setState(() {
           _saving = true;
@@ -133,33 +145,16 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           source: File(_mediaFilePath!),
         );
 
-        final entry = ResponseEntry(
-          id: responseId,
-          questionId: widget.question.id,
-          createdAt: now,
-          mediaType: widget.mediaType.name,
-          durationSeconds: null,
+        await _persistAndExit(
+          responseId: responseId,
           filePath: storedPath,
-        );
-
-        final db = await AppDatabase.instance;
-        await db.insert('responses', entry.toMap());
-        await QuestionUsageDao.recordAnswer(widget.question.id);
-
-        if (!mounted) return;
-
-        Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(
-            builder: (_) =>
-                SubmissionRitualScreen(mediaType: widget.mediaType.name),
-          ),
+          durationSeconds: null,
         );
         break;
       case MediaType.video:
         if (_mediaFilePath == null) return;
 
         final responseId = const Uuid().v4();
-        final now = DateTime.now();
 
         setState(() {
           _saving = true;
@@ -171,26 +166,10 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
           source: File(_mediaFilePath!),
         );
 
-        final entry = ResponseEntry(
-          id: responseId,
-          questionId: widget.question.id,
-          createdAt: now,
-          mediaType: widget.mediaType.name,
-          durationSeconds: null,
+        await _persistAndExit(
+          responseId: responseId,
           filePath: storedPath,
-        );
-
-        final db = await AppDatabase.instance;
-        await db.insert('responses', entry.toMap());
-        await QuestionUsageDao.recordAnswer(widget.question.id);
-
-        if (!mounted) return;
-
-        Navigator.of(context).pushReplacement(
-          CupertinoPageRoute(
-            builder: (_) =>
-                SubmissionRitualScreen(mediaType: widget.mediaType.name),
-          ),
+          durationSeconds: null,
         );
         break;
     }

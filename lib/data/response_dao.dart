@@ -17,15 +17,28 @@ class ResponseDao {
   static Future<List<ResponseEntry>> fetchAll() async {
     final Database db = await AppDatabase.instance;
 
-    final rows = await db.query(
-      'responses',
-      orderBy: 'created_at ASC',
-    );
+    final rows = await db.query('responses', orderBy: 'created_at ASC');
 
     return rows.map(ResponseEntry.fromMap).toList();
   }
 
-  static Future<List<ResponseEntry>> fetchByQuestionId(String questionId) async {
+  static Future<void> markReviewed({
+    required String responseId,
+    required DateTime reviewedAt,
+  }) async {
+    final Database db = await AppDatabase.instance;
+
+    await db.update(
+      'responses',
+      {'last_reviewed_at': reviewedAt.millisecondsSinceEpoch},
+      where: 'id = ?',
+      whereArgs: [responseId],
+    );
+  }
+
+  static Future<List<ResponseEntry>> fetchByQuestionId(
+    String questionId,
+  ) async {
     final Database db = await AppDatabase.instance;
 
     final rows = await db.query(

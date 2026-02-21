@@ -10,11 +10,18 @@ import 'question.dart';
 class QuestionRegistry {
   const QuestionRegistry._(); // Prevent instantiation
 
+  static const String identityQuestionId = 'system_identity_name';
+
   /// Ordered list of all questions.
   ///
   /// Order does not imply presentation order; selection logic
   /// is handled elsewhere.
   static const List<Question> all = [
+    Question(
+      id: identityQuestionId,
+      text: '¿Cómo te gusta que te llamen?',
+      category: 'system',
+    ),
     Question(
       id: 'childhood_place',
       text: '¿Cómo era el lugar donde creciste?',
@@ -105,9 +112,7 @@ class QuestionRegistry {
   ];
 
   /// Convenience lookup by id.
-  static final Map<String, Question> byId = {
-    for (final q in all) q.id: q,
-  };
+  static final Map<String, Question> byId = {for (final q in all) q.id: q};
 
   /// Returns only questions currently marked as active.
   static List<Question> get active =>

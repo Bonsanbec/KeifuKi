@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 import '../../domain/enums.dart';
+import '../../domain/question_registry.dart';
 import '../../services/question_selector.dart';
 import '../widgets/big_button.dart';
 import 'input_capture_screen.dart';
@@ -11,6 +12,9 @@ class CaptureScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isIdentityQuestion =
+        question.id == QuestionRegistry.identityQuestionId;
+
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(middle: Text('Responder')),
       child: SafeArea(
@@ -34,48 +38,50 @@ class CaptureScreen extends StatelessWidget {
                     );
                   },
                 ),
-                const SizedBox(height: 20),
-                BigButton(
-                  label: 'Grabar audio 🎙️',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (_) => InputCaptureScreen(
-                          mediaType: MediaType.audio,
-                          question: question,
+                if (!isIdentityQuestion) ...[
+                  const SizedBox(height: 20),
+                  BigButton(
+                    label: 'Grabar audio 🎙️',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => InputCaptureScreen(
+                            mediaType: MediaType.audio,
+                            question: question,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                BigButton(
-                  label: 'Tomar foto 📷',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (_) => InputCaptureScreen(
-                          mediaType: MediaType.image,
-                          question: question,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  BigButton(
+                    label: 'Tomar foto 📷',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => InputCaptureScreen(
+                            mediaType: MediaType.image,
+                            question: question,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-                BigButton(
-                  label: 'Grabar video 🎥',
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (_) => InputCaptureScreen(
-                          mediaType: MediaType.video,
-                          question: question,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  BigButton(
+                    label: 'Grabar video 🎥',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (_) => InputCaptureScreen(
+                            mediaType: MediaType.video,
+                            question: question,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),

@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 
-import 'ui/screens/question_screen.dart';
+import 'ui/screens/tree_home_screen.dart';
 
 class KeifuKiApp extends StatelessWidget {
   const KeifuKiApp({super.key});
@@ -10,7 +10,7 @@ class KeifuKiApp extends StatelessWidget {
     return const CupertinoApp(
       debugShowCheckedModeBanner: false,
       title: 'KeifuKi',
-      home: QuestionScreen(),
+      home: TreeHomeScreen(),
     );
   }
 }

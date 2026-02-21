@@ -3,15 +3,17 @@ import 'dart:async';
 import '../domain/question.dart';
 import '../domain/question_registry.dart';
 import '../data/question_usage_dao.dart';
-
+import '../data/system_state_dao.dart';
 
 class SelectedQuestion {
   final String id;
   final String text;
+  final String? category;
 
   const SelectedQuestion({
     required this.id,
     required this.text,
+    required this.category,
   });
 }
 
@@ -43,11 +45,19 @@ class QuestionSelector {
   static Question? selectNext({
     required DateTime now,
     required Map<String, QuestionUsage> usageByQuestionId,
+    required bool hasIdentityName,
   }) {
+    if (!hasIdentityName) {
+      return QuestionRegistry.byId[QuestionRegistry.identityQuestionId];
+    }
+
     final activeQuestions = QuestionRegistry.active;
+    final filteredQuestions = activeQuestions
+        .where((q) => q.id != QuestionRegistry.identityQuestionId)
+        .toList(growable: false);
 
     // 1. Prefer questions never answered.
-    for (final question in activeQuestions) {
+    for (final question in filteredQuestions) {
       final usage = usageByQuestionId[question.id];
       if (usage == null || usage.timesAnswered == 0) {
         return question;
@@ -55,7 +65,7 @@ class QuestionSelector {
     }
 
     // 2. Consider repeatable questions that satisfy cooldown.
-    for (final question in activeQuestions.where((q) => q.repeatable)) {
+    for (final question in filteredQuestions.where((q) => q.repeatable)) {
       final usage = usageByQuestionId[question.id];
       if (usage == null || usage.lastAnsweredAt == null) {
         return question;
@@ -78,13 +88,19 @@ class QuestionSelector {
 
   static Future<SelectedQuestion?> next() async {
     final usageMap = await QuestionUsageDao.fetchAll();
-    final question = selectNext(now: DateTime.now(), usageByQuestionId: usageMap);
+    final hasIdentityName = await SystemStateDao.hasIdentityName();
+    final question = selectNext(
+      now: DateTime.now(),
+      usageByQuestionId: usageMap,
+      hasIdentityName: hasIdentityName,
+    );
     if (question == null) {
       return null;
     }
     return SelectedQuestion(
       id: question.id,
       text: question.text,
+      category: question.category,
     );
   }
 

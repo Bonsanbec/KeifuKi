@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_sound/public/flutter_sound_player.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../data/response_dao.dart';
 import '../../domain/response.dart';
 import '../../domain/question.dart';
 import '../../domain/question_registry.dart';
@@ -11,10 +12,7 @@ import '../../domain/question_registry.dart';
 class ResponseViewerScreen extends StatefulWidget {
   final ResponseEntry response;
 
-  const ResponseViewerScreen({
-    super.key,
-    required this.response,
-  });
+  const ResponseViewerScreen({super.key, required this.response});
 
   @override
   State<ResponseViewerScreen> createState() => _ResponseViewerScreenState();
@@ -33,6 +31,7 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
   void initState() {
     super.initState();
     _loadQuestion();
+    _markReviewed();
   }
 
   @override
@@ -48,6 +47,13 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
     final q = QuestionRegistry.byId[widget.response.questionId];
     if (!mounted) return;
     setState(() => _question = q);
+  }
+
+  Future<void> _markReviewed() async {
+    await ResponseDao.markReviewed(
+      responseId: widget.response.id,
+      reviewedAt: DateTime.now(),
+    );
   }
 
   Widget _buildContent() {
@@ -76,8 +82,7 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
                   ? widget.response.durationSeconds! * 1000
                   : 0,
             );
-            _audioProgressSub ??=
-                _audioPlayer!.onProgress!.listen((event) {
+            _audioProgressSub ??= _audioPlayer!.onProgress!.listen((event) {
               if (!mounted) return;
               setState(() {
                 _audioPosition = event.position;
@@ -93,7 +98,7 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
               value: _audioDuration.inMilliseconds == 0
                   ? 0
                   : _audioPosition.inMilliseconds /
-                      _audioDuration.inMilliseconds,
+                        _audioDuration.inMilliseconds,
               onChanged: (v) async {
                 final pos = _audioDuration * v;
                 await _audioPlayer!.seekToPlayer(pos);
@@ -168,9 +173,7 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Respuesta'),
-      ),
+      navigationBar: const CupertinoNavigationBar(middle: Text('Respuesta')),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -187,9 +190,7 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Expanded(
-                      child: _buildContent(),
-                    ),
+                    Expanded(child: _buildContent()),
                   ],
                 ),
         ),
