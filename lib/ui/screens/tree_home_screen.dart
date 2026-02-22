@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 
@@ -41,15 +42,21 @@ class TreeHomeScreen extends StatefulWidget {
   State<TreeHomeScreen> createState() => _TreeHomeScreenState();
 }
 
-class _TreeHomeScreenState extends State<TreeHomeScreen> {
+class _TreeHomeScreenState extends State<TreeHomeScreen>
+    with SingleTickerProviderStateMixin {
   late Future<_TreeHomeViewModel> _future;
   Timer? _clockTimer;
+  late final AnimationController _windController;
   DateTime _now = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    _windController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 7),
+    )..repeat();
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       setState(() {
@@ -61,6 +68,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
   @override
   void dispose() {
     _clockTimer?.cancel();
+    _windController.dispose();
     super.dispose();
   }
 
@@ -125,7 +133,10 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
           content: Padding(
             padding: const EdgeInsets.only(top: 12),
             child: DefaultTextStyle(
-              style: const TextStyle(fontSize: 17, color: Color.fromARGB(255, 255, 255, 255)),
+              style: const TextStyle(
+                fontSize: 17,
+                color: Color.fromARGB(255, 255, 255, 255),
+              ),
               child: Column(
                 children: [
                   Text('Plantado: ${_formatDate(projection.plantedAt)}'),
@@ -242,32 +253,55 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                       ),
                     ),
                     Positioned.fill(
-                      child: CustomPaint(
-                        painter: ProceduralTreePainter(
-                          growthSeed: projection.growthSeed,
-                          growthRatio: projection.growthRatio,
-                          vitality: projection.vitality,
-                          fruits: projection.availableFruits,
+                      child: AnimatedBuilder(
+                        animation: _windController,
+                        builder: (context, child) {
+                          final phase = _windController.value * 2 * math.pi;
+                          final swayX = math.sin(phase) * 4.5;
+                          final swayAngle = math.sin(phase * 0.9) * 0.014;
+
+                          return Transform.translate(
+                            offset: Offset(swayX, 0),
+                            child: Transform.rotate(
+                              angle: swayAngle,
+                              alignment: Alignment.bottomCenter,
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: CustomPaint(
+                                painter: ProceduralTreePainter(
+                                  growthSeed: projection.growthSeed,
+                                  growthRatio: projection.growthRatio,
+                                  vitality: projection.vitality,
+                                  fruits: projection.availableFruits,
+                                ),
+                              ),
+                            ),
+                            for (final fruit in fruitPlacements)
+                              Positioned(
+                                left: fruit.center.dx - 24,
+                                top: fruit.center.dy - 24,
+                                width: 48,
+                                height: 48,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () async {
+                                    await _openFruitResponse(
+                                      vm: vm,
+                                      responseId: fruit.responseId,
+                                    );
+                                  },
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                    for (final fruit in fruitPlacements)
-                      Positioned(
-                        left: fruit.center.dx - 24,
-                        top: fruit.center.dy - 24,
-                        width: 48,
-                        height: 48,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () async {
-                            await _openFruitResponse(
-                              vm: vm,
-                              responseId: fruit.responseId,
-                            );
-                          },
-                          child: const SizedBox.expand(),
-                        ),
-                      ),
                     Positioned(
                       top: 18,
                       left: 16,

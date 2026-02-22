@@ -38,6 +38,50 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
   String? _mediaFilePath;
   int? _durationSeconds;
 
+  bool get _hasUnsavedCapture {
+    if (_saving) return true;
+    if (_mediaFilePath != null) return true;
+    if (widget.mediaType == MediaType.text) {
+      return _textController.text.trim().isNotEmpty;
+    }
+    return false;
+  }
+
+  Future<bool> _confirmLeaveIfNeeded() async {
+    if (!_hasUnsavedCapture) return true;
+
+    final shouldLeave = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: const Text('¿Salir de la captura?'),
+          content: const Text(
+            'Hay contenido sin guardar. Si sales ahora, se perderá.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Continuar editando'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Salir sin guardar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return shouldLeave ?? false;
+  }
+
+  Future<void> _attemptBack() async {
+    final canLeave = await _confirmLeaveIfNeeded();
+    if (!mounted || !canLeave) return;
+    Navigator.of(context).pop();
+  }
+
   Future<void> _persistAndExit({
     required String responseId,
     required String filePath,
@@ -212,78 +256,87 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: SafeArea(
-        child: Stack(
-          children: [
-            const Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF0A1023),
-                      Color(0xFF102A5A),
-                      Color(0xFF1A3529),
-                    ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _attemptBack();
+      },
+      child: CupertinoPageScaffold(
+        child: SafeArea(
+          child: Stack(
+            children: [
+              const Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFF0A1023),
+                        Color(0xFF102A5A),
+                        Color(0xFF1A3529),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 16,
-              left: 10,
-              child: CupertinoButton(
-                padding: const EdgeInsets.all(10),
-                minimumSize: const Size(44, 44),
-                color: const Color(0xAA0D1A2D),
-                borderRadius: BorderRadius.circular(22),
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  CupertinoIcons.back,
-                  color: Color(0xFFF4FAFF),
-                  size: 26,
+              Positioned(
+                top: 16,
+                left: 10,
+                child: CupertinoButton(
+                  padding: const EdgeInsets.all(10),
+                  minimumSize: const Size(44, 44),
+                  color: const Color(0xAA0D1A2D),
+                  borderRadius: BorderRadius.circular(22),
+                  onPressed: _attemptBack,
+                  child: const Icon(
+                    CupertinoIcons.back,
+                    color: Color(0xFFF4FAFF),
+                    size: 26,
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              left: 18,
-              right: 18,
-              top: 220,
-              bottom: 112,
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0x8F061125),
+              Positioned(
+                left: 18,
+                right: 18,
+                top: 220,
+                bottom: 112,
+                child: Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: const Color(0x8F061125),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: _buildCaptureWidget(),
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 26,
+                child: CupertinoButton(
+                  color: const Color(0xFF2C5141),
                   borderRadius: BorderRadius.circular(20),
-                ),
-                child: _buildCaptureWidget(),
-              ),
-            ),
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: 26,
-              child: CupertinoButton(
-                color: const Color(0xFF2C5141),
-                borderRadius: BorderRadius.circular(20),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                onPressed: _saving ? null : _saveResponse,
-                child: _saving
-                    ? const CupertinoActivityIndicator(color: Color(0xFFF4FAFF))
-                    : const Text(
-                        'Guardar recuerdo',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  onPressed: _saving ? null : _saveResponse,
+                  child: _saving
+                      ? const CupertinoActivityIndicator(
                           color: Color(0xFFF4FAFF),
+                        )
+                      : const Text(
+                          'Guardar recuerdo',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFF4FAFF),
+                          ),
                         ),
-                      ),
+                ),
               ),
-            ),
-            QuestionOverlay(text: widget.question.text),
-          ],
+              QuestionOverlay(text: widget.question.text),
+            ],
+          ),
         ),
       ),
     );

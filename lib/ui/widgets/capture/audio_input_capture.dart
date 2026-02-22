@@ -165,6 +165,8 @@ class _AudioInputCaptureState extends State<AudioInputCapture>
 
   @override
   Widget build(BuildContext context) {
+    final hasRecording = _recordedPath != null;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -173,7 +175,7 @@ class _AudioInputCaptureState extends State<AudioInputCapture>
               ? 'Grabando… $_recordSeconds s'
               : (_recordedPath == null
                     ? 'Toca para grabar audio'
-                    : 'Audio listo para revisar'),
+                    : 'Audio capturado'),
           style: const TextStyle(
             fontSize: 19,
             fontWeight: FontWeight.w700,
@@ -186,15 +188,17 @@ class _AudioInputCaptureState extends State<AudioInputCapture>
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CupertinoButton.filled(
-              onPressed: _isRecording ? _stopRecording : _startRecording,
-              child: Icon(
-                _isRecording ? CupertinoIcons.stop_circle : CupertinoIcons.mic,
-                size: 28,
+            if (!hasRecording || _isRecording)
+              CupertinoButton.filled(
+                onPressed: _isRecording ? _stopRecording : _startRecording,
+                child: Icon(
+                  _isRecording
+                      ? CupertinoIcons.stop_circle
+                      : CupertinoIcons.mic,
+                  size: 28,
+                ),
               ),
-            ),
-            if (_recordedPath != null) ...[
-              const SizedBox(width: 14),
+            if (hasRecording && !_isRecording) ...[
               CupertinoButton(
                 color: const Color(0xAA15345C),
                 onPressed: _togglePlayback,

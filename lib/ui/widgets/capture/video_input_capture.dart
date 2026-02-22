@@ -70,35 +70,38 @@ class _VideoInputCaptureState extends State<VideoInputCapture> {
         if (controller != null && controller.value.isInitialized)
           Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: AspectRatio(
-                aspectRatio: controller.value.aspectRatio,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    VideoPlayer(controller),
-                    Positioned(
-                      right: 10,
-                      bottom: 10,
-                      child: CupertinoButton(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
-                        ),
-                        minimumSize: const Size(40, 40),
-                        color: const Color(0xAA0C1B33),
-                        onPressed: _togglePlayback,
-                        child: Icon(
-                          controller.value.isPlaying
-                              ? CupertinoIcons.pause
-                              : CupertinoIcons.play,
-                          color: const Color(0xFFF4FAFF),
-                          size: 22,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 250),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: AspectRatio(
+                  aspectRatio: controller.value.aspectRatio,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      VideoPlayer(controller),
+                      Positioned(
+                        right: 10,
+                        bottom: 10,
+                        child: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          minimumSize: const Size(40, 40),
+                          color: const Color(0xAA0C1B33),
+                          onPressed: _togglePlayback,
+                          child: Icon(
+                            controller.value.isPlaying
+                                ? CupertinoIcons.pause
+                                : CupertinoIcons.play,
+                            color: const Color(0xFFF4FAFF),
+                            size: 22,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
