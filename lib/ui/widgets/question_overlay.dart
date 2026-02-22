@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 
 class QuestionOverlay extends StatelessWidget {
-  static const double topOffset = 56;
+  static const double topOffset = 72;
   static const EdgeInsets horizontalPadding = EdgeInsets.symmetric(
     horizontal: 20,
   );
