@@ -1,3 +1,5 @@
+import 'tree_state.dart';
+
 class TreeFruit {
   final String responseId;
   final String questionId;
@@ -17,20 +19,20 @@ class TreeFruit {
 class TreeProjection {
   final bool isPlanted;
   final String? identityName;
-  final int height;
-  final int branchCount;
-  final double density;
+  final double growthRatio;
   final double vitality;
+  final List<StructuralMarker> structuralMarkers;
+  final int growthSeed;
   final List<TreeFruit> availableFruits;
   final DateTime? lastWateredAt;
 
   const TreeProjection({
     required this.isPlanted,
     required this.identityName,
-    required this.height,
-    required this.branchCount,
-    required this.density,
+    required this.growthRatio,
     required this.vitality,
+    required this.structuralMarkers,
+    required this.growthSeed,
     required this.availableFruits,
     required this.lastWateredAt,
   });

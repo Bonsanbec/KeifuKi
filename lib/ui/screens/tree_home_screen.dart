@@ -5,6 +5,7 @@ import '../../data/system_state_dao.dart';
 import '../../domain/tree_projection.dart';
 import '../../services/question_selector.dart';
 import '../../services/tree_projection_service.dart';
+import '../painters/procedural_tree_painter.dart';
 import '../widgets/big_button.dart';
 import 'backup_ritual_screen.dart';
 import 'capture_screen.dart';
@@ -69,28 +70,31 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
         '${d.minute.toString().padLeft(2, '0')}';
   }
 
-  Widget _treeGlyph(TreeProjection projection) {
-    final vitalityColor = projection.vitality >= 0.6
-        ? CupertinoColors.activeGreen
-        : (projection.vitality >= 0.3
-              ? CupertinoColors.systemYellow
-              : CupertinoColors.systemGrey);
+  BoxDecoration _backgroundForVitality(double vitality) {
+    final clamped = vitality.clamp(0.0, 1.0);
 
-    return Column(
-      children: [
-        Icon(
-          CupertinoIcons.tree,
-          size: 92 + (projection.height.toDouble() * 2).clamp(0, 56),
-          color: vitalityColor,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          projection.identityName != null
-              ? 'Árbol de ${projection.identityName}'
-              : 'Semilla en reposo',
-          style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w600),
-        ),
-      ],
+    final top = Color.lerp(
+      const Color(0xFFEFF5EE),
+      const Color(0xFFDFF0DF),
+      clamped,
+    )!;
+    final mid = Color.lerp(
+      const Color(0xFFE8EFE8),
+      const Color(0xFFD3E8D3),
+      clamped,
+    )!;
+    final bottom = Color.lerp(
+      const Color(0xFFE2DDD6),
+      const Color(0xFFDBD4C7),
+      clamped,
+    )!;
+
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [top, mid, bottom],
+      ),
     );
   }
 
@@ -109,97 +113,121 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
             final vm = snapshot.data!;
             final projection = vm.projection;
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _treeGlyph(projection),
-                  const SizedBox(height: 24),
-                  CupertinoListSection.insetGrouped(
-                    children: [
-                      CupertinoListTile(
-                        title: const Text('Altura'),
-                        trailing: Text('${projection.height}'),
-                      ),
-                      CupertinoListTile(
-                        title: const Text('Ramificación'),
-                        trailing: Text('${projection.branchCount}'),
-                      ),
-                      CupertinoListTile(
-                        title: const Text('Densidad'),
-                        trailing: Text(
-                          '${(projection.density * 100).toStringAsFixed(0)}%',
+            return Container(
+              decoration: _backgroundForVitality(projection.vitality),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      height: 360,
+                      child: CustomPaint(
+                        painter: ProceduralTreePainter(
+                          growthSeed: projection.growthSeed,
+                          growthRatio: projection.growthRatio,
+                          vitality: projection.vitality,
+                          structuralMarkers: projection.structuralMarkers,
                         ),
                       ),
-                      CupertinoListTile(
-                        title: const Text('Vitalidad'),
-                        trailing: Text(
-                          '${projection.vitalityLabel} '
-                          '(${(projection.vitality * 100).toStringAsFixed(0)}%)',
-                        ),
-                      ),
-                      CupertinoListTile(
-                        title: const Text('Último riego'),
-                        subtitle: Text(
-                          _formatLastWatered(projection.lastWateredAt),
-                        ),
-                      ),
-                      CupertinoListTile(
-                        title: const Text('Frutos disponibles'),
-                        trailing: Text('${projection.availableFruits.length}'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  if (vm.nextQuestion != null)
+                    ),
+                    const SizedBox(height: 10),
                     Text(
-                      vm.nextQuestion!.text,
-                      style: const TextStyle(fontSize: 18),
-                    )
-                  else
-                    const Text('No hay preguntas disponibles por ahora.'),
-                  const SizedBox(height: 16),
-                  BigButton(
-                    label: 'Responder ahora',
-                    onPressed: vm.nextQuestion == null
-                        ? null
-                        : () async {
-                            await Navigator.of(context).push(
-                              CupertinoPageRoute(
-                                builder: (_) =>
-                                    CaptureScreen(question: vm.nextQuestion!),
-                              ),
-                            );
-                            await _refresh();
-                          },
-                  ),
-                  const SizedBox(height: 12),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () async {
-                      await Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => const ResponsesArchiveScreen(),
+                      projection.identityName != null
+                          ? 'Árbol de ${projection.identityName}'
+                          : 'Semilla en reposo',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    CupertinoListSection.insetGrouped(
+                      children: [
+                        CupertinoListTile(
+                          title: const Text('Crecimiento'),
+                          trailing: Text(
+                            '${(projection.growthRatio * 100).toStringAsFixed(1)}%',
+                          ),
                         ),
-                      );
-                      await _refresh();
-                    },
-                    child: const Text('Abrir archivo de respuestas'),
-                  ),
-                  const SizedBox(height: 12),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        CupertinoPageRoute(
-                          builder: (_) => const BackupRitualScreen(),
+                        CupertinoListTile(
+                          title: const Text('Vitalidad'),
+                          trailing: Text(
+                            '${projection.vitalityLabel} '
+                            '(${(projection.vitality * 100).toStringAsFixed(0)}%)',
+                          ),
                         ),
-                      );
-                    },
-                    child: const Text('Respaldar en Google Drive'),
-                  ),
-                ],
+                        CupertinoListTile(
+                          title: const Text('Marcadores estructurales'),
+                          trailing: Text(
+                            '${projection.structuralMarkers.length}',
+                          ),
+                        ),
+                        CupertinoListTile(
+                          title: const Text('Frutos disponibles'),
+                          trailing: Text(
+                            '${projection.availableFruits.length}',
+                          ),
+                        ),
+                        CupertinoListTile(
+                          title: const Text('Último riego'),
+                          subtitle: Text(
+                            _formatLastWatered(projection.lastWateredAt),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (vm.nextQuestion != null)
+                      Text(
+                        vm.nextQuestion!.text,
+                        style: const TextStyle(fontSize: 18),
+                      )
+                    else
+                      const Text('No hay preguntas disponibles por ahora.'),
+                    const SizedBox(height: 14),
+                    BigButton(
+                      label: 'Responder ahora',
+                      onPressed: vm.nextQuestion == null
+                          ? null
+                          : () async {
+                              await Navigator.of(context).push(
+                                CupertinoPageRoute(
+                                  builder: (_) =>
+                                      CaptureScreen(question: vm.nextQuestion!),
+                                ),
+                              );
+                              await _refresh();
+                            },
+                    ),
+                    const SizedBox(height: 12),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () async {
+                        await Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            builder: (_) => const ResponsesArchiveScreen(),
+                          ),
+                        );
+                        await _refresh();
+                      },
+                      child: const Text('Abrir archivo de respuestas'),
+                    ),
+                    const SizedBox(height: 12),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          CupertinoPageRoute(
+                            builder: (_) => const BackupRitualScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text('Respaldar en Google Drive'),
+                    ),
+                  ],
+                ),
               ),
             );
           },

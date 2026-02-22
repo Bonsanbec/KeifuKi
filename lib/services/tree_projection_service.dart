@@ -15,24 +15,12 @@ class TreeProjectionService {
     final sortedResponses = [...responses]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-    final growthScore = _growthScore(
-      sortedResponses,
-      treeState.structuralMarkers,
+    final growthRatio = _computeGrowthRatio(
+      now: now,
+      plantedAt: treeState.plantedAt,
+      responses: sortedResponses,
+      structuralMarkers: treeState.structuralMarkers,
     );
-    final height = math.max(1, 1 + (growthScore / 3.8).floor());
-
-    final uniqueTags = <String>{
-      for (final response in sortedResponses) ...?response.growthMetadata?.tags,
-    };
-
-    final branchCount = math.max(
-      1,
-      1 + (uniqueTags.length / 2).floor() + treeState.structuralMarkers.length,
-    );
-
-    final density = (_clamp01(
-      0.22 + (uniqueTags.length * 0.06) + (sortedResponses.length * 0.015),
-    ));
 
     final vitality = _computeVitality(
       now: now,
@@ -50,19 +38,16 @@ class TreeProjectionService {
     return TreeProjection(
       isPlanted: treeState.plantedAt != null,
       identityName: treeState.identityName,
-      height: height,
-      branchCount: branchCount,
-      density: density,
+      growthRatio: growthRatio,
       vitality: vitality,
+      structuralMarkers: treeState.structuralMarkers,
+      growthSeed: treeState.growthSeed,
       availableFruits: fruits,
       lastWateredAt: treeState.lastWateredAt,
     );
   }
 
-  static double _growthScore(
-    List<ResponseEntry> responses,
-    List<StructuralMarker> structuralMarkers,
-  ) {
+  static double _weightedResponseScore(List<ResponseEntry> responses) {
     double total = 0;
 
     for (final response in responses) {
@@ -85,11 +70,35 @@ class TreeProjectionService {
       }
     }
 
+    return total;
+  }
+
+  static double _computeGrowthRatio({
+    required DateTime now,
+    required DateTime? plantedAt,
+    required List<ResponseEntry> responses,
+    required List<StructuralMarker> structuralMarkers,
+  }) {
+    if (plantedAt == null) return 0.0;
+
+    final elapsedDays = math.max(0, now.difference(plantedAt).inDays);
+    final weightedResponses = _weightedResponseScore(responses);
+
+    final timeTerm = math.log(elapsedDays + 1) / math.log(365 + 1);
+    final responseTerm = math.sqrt(
+      math.log(weightedResponses + 1) / math.log(2500 + 1),
+    );
+
+    double markerTerm = 0;
     for (final marker in structuralMarkers) {
-      total += marker.intensity * 1.8;
+      markerTerm += marker.intensity * 0.02;
     }
 
-    return total;
+    final baseGrowth = (timeTerm * 0.55) + (responseTerm * 0.45);
+    final ratio = math.sqrt(_clamp01(baseGrowth + markerTerm));
+
+    // Keep initial growth subtle but visible once planted.
+    return _clamp01(0.04 + (ratio * 0.96));
   }
 
   static double _computeVitality({
