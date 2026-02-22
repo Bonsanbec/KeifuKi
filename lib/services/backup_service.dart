@@ -39,7 +39,7 @@ class BackupService {
     final Archive archive = Archive();
 
     // Add database file as 'app.db'
-    final File dbFile = File(join(appDir.path, _databaseFileName));
+    final File dbFile = File(join(appDir.path, 'data', _databaseFileName));
     if (await dbFile.exists()) {
       final List<int> dbBytes = await dbFile.readAsBytes();
       archive.addFile(ArchiveFile(_databaseFileName, dbBytes.length, dbBytes));
