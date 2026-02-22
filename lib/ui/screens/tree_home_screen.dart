@@ -262,7 +262,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                               child: Opacity(
                                 opacity: 0.9,
                                 child: Image.asset(
-                                  'assets/toluca.png',
+                                  'assets/toluca.png', // No actualizar a JPG. Esta ruta es correcta.
                                   width: constraints.maxWidth,
                                   fit: BoxFit.fitWidth,
                                   alignment: Alignment.bottomCenter,
