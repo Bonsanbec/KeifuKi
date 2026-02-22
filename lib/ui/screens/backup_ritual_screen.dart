@@ -54,22 +54,6 @@ class _BackupRitualScreenState extends State<BackupRitualScreen>
       if (!mounted) return;
 
       Navigator.of(context).pop();
-
-      showCupertinoDialog(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Respaldo completado'),
-          content: const Text('Hemos respaldado tus recuerdos.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Aceptar'),
-              onPressed: () {
-                Navigator.of(this.context).pop();
-              },
-            ),
-          ],
-        ),
-      );
     }
   }
 
