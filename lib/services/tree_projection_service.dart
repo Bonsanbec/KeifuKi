@@ -10,6 +10,8 @@ class TreeProjectionService {
   static TreeProjection project({
     required TreeState treeState,
     required List<ResponseEntry> responses,
+    required Set<String> harvestedResponseIds,
+    required int harvestedCount,
     required DateTime now,
   }) {
     final sortedResponses = [...responses]
@@ -32,6 +34,8 @@ class TreeProjectionService {
     final fruits = _selectFruits(
       responses: sortedResponses,
       seed: treeState.growthSeed,
+      harvestedResponseIds: harvestedResponseIds,
+      harvestedCount: harvestedCount,
       now: now,
     );
 
@@ -138,9 +142,15 @@ class TreeProjectionService {
   static List<TreeFruit> _selectFruits({
     required List<ResponseEntry> responses,
     required int seed,
+    required Set<String> harvestedResponseIds,
+    required int harvestedCount,
     required DateTime now,
   }) {
     final candidates = responses.where((response) {
+      if (harvestedResponseIds.contains(response.id)) {
+        return false;
+      }
+
       final ageDays = now.difference(response.createdAt).inDays;
       if (ageDays < 45) return false;
 
@@ -172,9 +182,13 @@ class TreeProjectionService {
             .toList(growable: false)
           ..sort((a, b) => b.score.compareTo(a.score));
 
+    final growthBoost = 1 - math.exp(-(harvestedCount / 8.0));
+    final dynamicThreshold = (78 - (growthBoost * 20)).clamp(56, 78).toInt();
+    final maxPending = (2 + (growthBoost * 3)).clamp(2, 5).toInt();
+
     return withScore
-        .where((entry) => entry.score >= 72)
-        .take(3)
+        .where((entry) => entry.score >= dynamicThreshold)
+        .take(maxPending)
         .map(
           (entry) => TreeFruit(
             responseId: entry.response.id,

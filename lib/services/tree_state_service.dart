@@ -2,6 +2,7 @@ import '../data/system_state_dao.dart';
 import '../domain/response.dart';
 import '../domain/tree_state.dart';
 import '../domain/question_registry.dart';
+import 'notification_service.dart';
 
 class TreeStateService {
   const TreeStateService._();
@@ -44,5 +45,9 @@ class TreeStateService {
     );
 
     await SystemStateDao.saveTreeState(updated);
+    await NotificationService.refreshWateringReminder(
+      lastWateredAt: updated.lastWateredAt,
+      identityName: updated.identityName,
+    );
   }
 }

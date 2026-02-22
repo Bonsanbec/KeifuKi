@@ -1,18 +1,13 @@
 import 'package:flutter/cupertino.dart';
 
-import '../../data/response_dao.dart';
-import '../../domain/question_registry.dart';
+import '../../data/harvested_memory_dao.dart';
 import '../../domain/response.dart';
+import '../../domain/question_registry.dart';
 import 'response_viewer_screen.dart';
 
-class ResponsesArchiveScreen extends StatefulWidget {
-  const ResponsesArchiveScreen({super.key});
+class HarvestedMemoriesScreen extends StatelessWidget {
+  const HarvestedMemoriesScreen({super.key});
 
-  @override
-  State<ResponsesArchiveScreen> createState() => _ResponsesArchiveScreenState();
-}
-
-class _ResponsesArchiveScreenState extends State<ResponsesArchiveScreen> {
   IconData _iconForMediaType(String mediaType) {
     switch (mediaType) {
       case 'audio':
@@ -77,7 +72,7 @@ class _ResponsesArchiveScreenState extends State<ResponsesArchiveScreen> {
               left: 20,
               right: 20,
               child: Text(
-                'Archivo completo',
+                'Canasta de frutos',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 30,
@@ -96,7 +91,7 @@ class _ResponsesArchiveScreenState extends State<ResponsesArchiveScreen> {
             Positioned.fill(
               top: 130,
               child: FutureBuilder<List<ResponseEntry>>(
-                future: ResponseDao.fetchAll(),
+                future: HarvestedMemoryDao.fetchHarvestedResponses(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CupertinoActivityIndicator());
@@ -106,7 +101,7 @@ class _ResponsesArchiveScreenState extends State<ResponsesArchiveScreen> {
                   if (responses.isEmpty) {
                     return const Center(
                       child: Text(
-                        'Aún no hay respuestas guardadas.',
+                        'Aún no has recogido frutos.',
                         style: TextStyle(
                           color: Color(0xFFE5F0FF),
                           fontSize: 19,

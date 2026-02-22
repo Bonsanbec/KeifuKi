@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 
+import '../../data/harvested_memory_dao.dart';
 import '../../data/response_dao.dart';
 import '../../data/system_state_dao.dart';
 import '../../domain/response.dart';
 import '../../domain/tree_projection.dart';
+import '../../services/notification_service.dart';
 import '../../services/question_selector.dart';
 import '../../services/tree_projection_service.dart';
 import '../painters/procedural_tree_painter.dart';
+import '../painters/time_sky_painter.dart';
 import '../painters/tree_environment_painter.dart';
 import '../widgets/question_overlay.dart';
 import 'backup_ritual_screen.dart';
 import 'capture_screen.dart';
+import 'harvested_memories_screen.dart';
 import 'response_viewer_screen.dart';
 import 'responses_archive_screen.dart';
 
@@ -18,11 +24,13 @@ class _TreeHomeViewModel {
   final TreeProjection projection;
   final SelectedQuestion? nextQuestion;
   final List<ResponseEntry> responses;
+  final int harvestedCount;
 
   const _TreeHomeViewModel({
     required this.projection,
     required this.nextQuestion,
     required this.responses,
+    required this.harvestedCount,
   });
 }
 
@@ -35,27 +43,53 @@ class TreeHomeScreen extends StatefulWidget {
 
 class _TreeHomeScreenState extends State<TreeHomeScreen> {
   late Future<_TreeHomeViewModel> _future;
+  Timer? _clockTimer;
+  DateTime _now = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _future = _load();
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   Future<_TreeHomeViewModel> _load() async {
     final treeState = await SystemStateDao.ensureTreeState();
     final responses = await ResponseDao.fetchAll();
+
+    final harvestedIds = await HarvestedMemoryDao.fetchHarvestedResponseIds();
+    final harvestedCount = harvestedIds.length;
+
     final projection = TreeProjectionService.project(
       treeState: treeState,
       responses: responses,
+      harvestedResponseIds: harvestedIds,
+      harvestedCount: harvestedCount,
       now: DateTime.now(),
     );
     final nextQuestion = await QuestionSelector.next();
+
+    await NotificationService.refreshWateringReminder(
+      lastWateredAt: projection.lastWateredAt,
+      identityName: projection.identityName,
+    );
 
     return _TreeHomeViewModel(
       projection: projection,
       nextQuestion: nextQuestion,
       responses: responses,
+      harvestedCount: harvestedCount,
     );
   }
 
@@ -64,6 +98,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
     if (!mounted) return;
     setState(() {
       _future = next;
+      _now = DateTime.now();
     });
   }
 
@@ -96,7 +131,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                   Text('Plantado: ${_formatDate(projection.plantedAt)}'),
                   const SizedBox(height: 8),
                   Text(
-                    'Crecimiento: ${(projection.growthRatio * 100).toStringAsFixed(1)}%',
+                    'Nivel de crecimiento: ${(projection.growthRatio * 100).toStringAsFixed(1)}%',
                   ),
                   const SizedBox(height: 8),
                   Text('Vitalidad: ${projection.vitalityLabel}'),
@@ -105,9 +140,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                     'Días desde último riego: ${_daysSince(projection.lastWateredAt)}',
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Marcadores estructurales: ${projection.structuralMarkers.length}',
-                  ),
+                  Text('Frutos recogidos: ${vm.harvestedCount}'),
                 ],
               ),
             ),
@@ -123,7 +156,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                 );
                 await _refresh();
               },
-              child: const Text('Abrir archivo completo'),
+              child: const Text('Archivo completo'),
             ),
             CupertinoDialogAction(
               isDefaultAction: true,
@@ -150,28 +183,18 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
 
     if (response == null) return;
 
+    await HarvestedMemoryDao.markHarvested(
+      responseId: responseId,
+      harvestedAt: DateTime.now(),
+    );
+
+    if (!mounted) return;
     await Navigator.of(context).push(
       CupertinoPageRoute(
         builder: (_) => ResponseViewerScreen(response: response!),
       ),
     );
     await _refresh();
-  }
-
-  BoxDecoration _skyBackground() {
-    return const BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        stops: [0.0, 0.38, 0.74, 1.0],
-        colors: [
-          Color(0xFF080D1F),
-          Color(0xFF132A67),
-          Color(0xFF1D3A2E),
-          Color(0xFF2A2E1A),
-        ],
-      ),
-    );
   }
 
   @override
@@ -209,7 +232,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                 return Stack(
                   children: [
                     Positioned.fill(
-                      child: DecoratedBox(decoration: _skyBackground()),
+                      child: CustomPaint(painter: TimeSkyPainter(now: _now)),
                     ),
                     Positioned.fill(
                       child: CustomPaint(
@@ -230,10 +253,10 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                     ),
                     for (final fruit in fruitPlacements)
                       Positioned(
-                        left: fruit.center.dx - 22,
-                        top: fruit.center.dy - 22,
-                        width: 44,
-                        height: 44,
+                        left: fruit.center.dx - 24,
+                        top: fruit.center.dy - 24,
+                        width: 48,
+                        height: 48,
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () async {
@@ -245,6 +268,42 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                           child: const SizedBox.expand(),
                         ),
                       ),
+                    Positioned(
+                      top: 18,
+                      left: 16,
+                      child: CupertinoButton(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        minimumSize: const Size(52, 52),
+                        color: const Color(0xC0182D4A),
+                        borderRadius: BorderRadius.circular(22),
+                        onPressed: () async {
+                          await Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (_) => const HarvestedMemoriesScreen(),
+                            ),
+                          );
+                          await _refresh();
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('🧺', style: TextStyle(fontSize: 24)),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${vm.harvestedCount}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFF4FAFF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     Positioned(
                       top: 18,
                       right: 16,
@@ -329,7 +388,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFF5FAFF),
+                                color: Color(0xFFE9F3FF),
                               ),
                             ),
                           ],

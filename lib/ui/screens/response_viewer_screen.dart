@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_sound/public/flutter_sound_player.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../data/response_dao.dart';
-import '../../domain/response.dart';
 import '../../domain/question.dart';
 import '../../domain/question_registry.dart';
+import '../../domain/response.dart';
 
 class ResponseViewerScreen extends StatefulWidget {
   final ResponseEntry response;
@@ -59,9 +60,15 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
   Widget _buildContent() {
     switch (widget.response.mediaType) {
       case 'text':
-        return Text(
-          File(widget.response.filePath).readAsStringSync(),
-          style: const TextStyle(fontSize: 17),
+        return SingleChildScrollView(
+          child: Text(
+            File(widget.response.filePath).readAsStringSync(),
+            style: const TextStyle(
+              fontSize: 19,
+              color: Color(0xFFF3F9FF),
+              height: 1.35,
+            ),
+          ),
         );
 
       case 'image':
@@ -106,12 +113,9 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
             ),
             Text(
               '${_audioPosition.inSeconds}s / ${_audioDuration.inSeconds}s',
-              style: const TextStyle(
-                color: CupertinoColors.systemGrey,
-                fontSize: 13,
-              ),
+              style: const TextStyle(color: Color(0xFFD5E6FF), fontSize: 15),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             CupertinoButton.filled(
               child: const Text('Reproducir'),
               onPressed: () async {
@@ -134,65 +138,100 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
           return const Center(child: CupertinoActivityIndicator());
         }
 
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              AspectRatio(
-                aspectRatio: _videoController!.value.aspectRatio,
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: SizedBox(
-                    width: _videoController!.value.size.width,
-                    height: _videoController!.value.size.height,
-                    child: VideoPlayer(_videoController!),
-                  ),
-                ),
+        return Column(
+          children: [
+            AspectRatio(
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: VideoPlayer(_videoController!),
+            ),
+            const SizedBox(height: 12),
+            CupertinoButton(
+              color: const Color(0xAA15345C),
+              child: Text(
+                _videoController!.value.isPlaying ? 'Pausar' : 'Reproducir',
+                style: const TextStyle(color: Color(0xFFF4FAFF)),
               ),
-              const SizedBox(height: 12),
-              CupertinoButton(
-                child: Text(
-                  _videoController!.value.isPlaying ? 'Pausar' : 'Reproducir',
-                ),
-                onPressed: () {
-                  setState(() {
-                    _videoController!.value.isPlaying
-                        ? _videoController!.pause()
-                        : _videoController!.play();
-                  });
-                },
-              ),
-            ],
-          ),
+              onPressed: () {
+                setState(() {
+                  _videoController!.value.isPlaying
+                      ? _videoController!.pause()
+                      : _videoController!.play();
+                });
+              },
+            ),
+          ],
         );
 
       default:
-        return const Text('Tipo de respuesta desconocido');
+        return const Text(
+          'Tipo de respuesta desconocido',
+          style: TextStyle(color: Color(0xFFF4FAFF)),
+        );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Respuesta')),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: _question == null
-              ? const Center(child: CupertinoActivityIndicator())
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _question!.text,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Expanded(child: _buildContent()),
-                  ],
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF0A1023),
+                      Color(0xFF102A5A),
+                      Color(0xFF1A3529),
+                    ],
+                  ),
                 ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              left: 10,
+              child: CupertinoButton(
+                padding: const EdgeInsets.all(10),
+                minimumSize: const Size(44, 44),
+                color: const Color(0xAA0D1A2D),
+                borderRadius: BorderRadius.circular(22),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  CupertinoIcons.back,
+                  color: Color(0xFFF4FAFF),
+                  size: 26,
+                ),
+              ),
+            ),
+            Positioned.fill(
+              top: 80,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+                child: _question == null
+                    ? const Center(child: CupertinoActivityIndicator())
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _question!.text,
+                            style: const TextStyle(
+                              fontSize: 29,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFF5FAFF),
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Expanded(child: _buildContent()),
+                        ],
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_sound/flutter_sound.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 
 typedef AudioRecordedCallback = void Function(String path, int durationSeconds);
@@ -11,30 +12,38 @@ typedef AudioRecordedCallback = void Function(String path, int durationSeconds);
 class AudioInputCapture extends StatefulWidget {
   final AudioRecordedCallback onRecorded;
 
-  const AudioInputCapture({
-    super.key,
-    required this.onRecorded,
-  });
+  const AudioInputCapture({super.key, required this.onRecorded});
 
   @override
-  _AudioInputCaptureState createState() => _AudioInputCaptureState();
+  State<AudioInputCapture> createState() => _AudioInputCaptureState();
 }
 
-class _AudioInputCaptureState extends State<AudioInputCapture> {
+class _AudioInputCaptureState extends State<AudioInputCapture>
+    with SingleTickerProviderStateMixin {
   final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
+
+  late final AnimationController _waveController;
   bool _isRecording = false;
-  late String _currentFilePath;
+  bool _isPlaying = false;
+  String? _recordedPath;
   Timer? _timer;
   int _recordSeconds = 0;
 
   @override
   void initState() {
     super.initState();
-    _initializeRecorder();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat();
+
+    _initialize();
   }
 
-  Future<void> _initializeRecorder() async {
+  Future<void> _initialize() async {
     await _recorder.openRecorder();
+    await _player.openPlayer();
     await Permission.microphone.request();
   }
 
@@ -44,38 +53,113 @@ class _AudioInputCaptureState extends State<AudioInputCapture> {
     return '${dir.path}/$id.m4a';
   }
 
-  void _startRecording() async {
-    _currentFilePath = await _generateFilePath();
+  Future<void> _startRecording() async {
+    final filePath = await _generateFilePath();
+
+    _recordedPath = null;
     _recordSeconds = 0;
-    setState(() => _isRecording = true);
+    setState(() {
+      _isRecording = true;
+      _isPlaying = false;
+    });
 
-    // Starts the recorder
-    await _recorder.startRecorder(
-      toFile: _currentFilePath,
-      codec: Codec.aacMP4,
-    );
+    await _recorder.startRecorder(toFile: filePath, codec: Codec.aacMP4);
 
-    // Simple timer for duration
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
       setState(() {
         _recordSeconds++;
       });
     });
+
+    _recordedPath = filePath;
   }
 
-  void _stopRecording() async {
+  Future<void> _stopRecording() async {
     await _recorder.stopRecorder();
     _timer?.cancel();
 
-    setState(() => _isRecording = false);
+    setState(() {
+      _isRecording = false;
+    });
 
-    widget.onRecorded(_currentFilePath, _recordSeconds);
+    final path = _recordedPath;
+    if (path != null) {
+      widget.onRecorded(path, _recordSeconds);
+    }
+  }
+
+  Future<void> _togglePlayback() async {
+    if (_recordedPath == null) return;
+
+    if (_isPlaying) {
+      await _player.stopPlayer();
+      if (!mounted) return;
+      setState(() {
+        _isPlaying = false;
+      });
+      return;
+    }
+
+    await _player.startPlayer(
+      fromURI: _recordedPath,
+      whenFinished: () {
+        if (!mounted) return;
+        setState(() {
+          _isPlaying = false;
+        });
+      },
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _isPlaying = true;
+    });
+  }
+
+  Widget _buildWaveform() {
+    return AnimatedBuilder(
+      animation: _waveController,
+      builder: (context, _) {
+        final t = _waveController.value;
+
+        return SizedBox(
+          height: 78,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(24, (index) {
+              final phase = (t * 2 * 3.1415926) + (index * 0.42);
+              final amp = (_isRecording
+                  ? (0.4 + (0.6 * (math.sin(phase).abs())))
+                  : 0.22);
+              final h = 10 + (amp * 46);
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1.8),
+                child: Container(
+                  width: 5,
+                  height: h,
+                  decoration: BoxDecoration(
+                    color: _isRecording
+                        ? const Color(0xFFFF7A59)
+                        : const Color(0x88D7E4FF),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      },
+    );
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _waveController.dispose();
     _recorder.closeRecorder();
+    _player.closePlayer();
     super.dispose();
   }
 
@@ -87,21 +171,54 @@ class _AudioInputCaptureState extends State<AudioInputCapture> {
         Text(
           _isRecording
               ? 'Grabando… $_recordSeconds s'
-              : 'Toca para grabar audio',
-          style: const TextStyle(fontSize: 18),
+              : (_recordedPath == null
+                    ? 'Toca para grabar audio'
+                    : 'Audio listo para revisar'),
+          style: const TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFFF2F8FF),
+          ),
         ),
         const SizedBox(height: 16),
-        CupertinoButton.filled(
-          child: Icon(
-            _isRecording ? CupertinoIcons.stop_circle : CupertinoIcons.mic,
-          ),
-          onPressed: () {
-            if (_isRecording) {
-              _stopRecording();
-            } else {
-              _startRecording();
-            }
-          },
+        _buildWaveform(),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CupertinoButton.filled(
+              onPressed: _isRecording ? _stopRecording : _startRecording,
+              child: Icon(
+                _isRecording ? CupertinoIcons.stop_circle : CupertinoIcons.mic,
+                size: 28,
+              ),
+            ),
+            if (_recordedPath != null) ...[
+              const SizedBox(width: 14),
+              CupertinoButton(
+                color: const Color(0xAA15345C),
+                onPressed: _togglePlayback,
+                child: Row(
+                  children: [
+                    Icon(
+                      _isPlaying ? CupertinoIcons.pause : CupertinoIcons.play,
+                      size: 22,
+                      color: const Color(0xFFF3FAFF),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Previsualizar',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFF3FAFF),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );

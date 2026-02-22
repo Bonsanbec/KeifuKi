@@ -3,7 +3,7 @@
 /// This file defines the canonical database structure.
 /// SQL is kept explicit and readable on purpose.
 class Migrations {
-  static const int currentVersion = 2;
+  static const int currentVersion = 3;
 
   static const List<String> v1 = [
     '''
@@ -40,5 +40,14 @@ class Migrations {
     ''',
   ];
 
-  static List<List<String>> get all => [v1, v2];
+  static const List<String> v3 = [
+    '''
+    CREATE TABLE IF NOT EXISTS harvested_memories (
+      response_id TEXT PRIMARY KEY,
+      harvested_at INTEGER NOT NULL
+    );
+    ''',
+  ];
+
+  static List<List<String>> get all => [v1, v2, v3];
 }
