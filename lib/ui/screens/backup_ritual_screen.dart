@@ -55,6 +55,8 @@ class _BackupRitualScreenState extends State<BackupRitualScreen>
       Timer(const Duration(milliseconds: 2600), () {
         if (!mounted) return;
 
+        Navigator.of(context).pop();
+
         showCupertinoDialog(
           context: context,
           builder: (_) => CupertinoAlertDialog(
