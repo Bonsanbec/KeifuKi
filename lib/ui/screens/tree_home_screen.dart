@@ -56,7 +56,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
     _windController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 7),
-    )..repeat();
+    )..repeat(reverse: true);
     _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       setState(() {
@@ -256,9 +256,18 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                       child: AnimatedBuilder(
                         animation: _windController,
                         builder: (context, child) {
+                          final eased = Curves.easeInOut.transform(
+                            _windController.value,
+                          );
+                          final centered = (eased * 2) - 1; // -1..1
                           final phase = _windController.value * 2 * math.pi;
-                          final swayX = math.sin(phase) * 4.5;
-                          final swayAngle = math.sin(phase * 0.9) * 0.014;
+
+                          // Primary sway + tiny harmonic that closes the loop.
+                          final swayX =
+                              (centered * 4.2) + (math.sin(phase * 2) * 0.6);
+                          final swayAngle =
+                              (centered * 0.012) +
+                              (math.sin(phase * 2) * 0.0018);
 
                           return Transform.translate(
                             offset: Offset(swayX, 0),
