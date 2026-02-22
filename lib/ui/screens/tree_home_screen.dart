@@ -246,6 +246,29 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                       child: CustomPaint(painter: TimeSkyPainter(now: _now)),
                     ),
                     Positioned.fill(
+                      child: IgnorePointer(
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: constraints.maxHeight * 0.11,
+                              child: Opacity(
+                                opacity: 0.9,
+                                child: Image.asset(
+                                  'assets/toluca.png',
+                                  width: constraints.maxWidth,
+                                  fit: BoxFit.fitWidth,
+                                  alignment: Alignment.bottomCenter,
+                                  filterQuality: FilterQuality.high,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned.fill(
                       child: CustomPaint(
                         painter: TreeGroundPainter(
                           vitality: projection.vitality,
