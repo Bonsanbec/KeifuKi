@@ -43,6 +43,7 @@ class TreeProjectionService {
       structuralMarkers: treeState.structuralMarkers,
       growthSeed: treeState.growthSeed,
       availableFruits: fruits,
+      plantedAt: treeState.plantedAt,
       lastWateredAt: treeState.lastWateredAt,
     );
   }

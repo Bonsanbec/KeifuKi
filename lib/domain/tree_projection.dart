@@ -24,6 +24,7 @@ class TreeProjection {
   final List<StructuralMarker> structuralMarkers;
   final int growthSeed;
   final List<TreeFruit> availableFruits;
+  final DateTime? plantedAt;
   final DateTime? lastWateredAt;
 
   const TreeProjection({
@@ -34,6 +35,7 @@ class TreeProjection {
     required this.structuralMarkers,
     required this.growthSeed,
     required this.availableFruits,
+    required this.plantedAt,
     required this.lastWateredAt,
   });
 

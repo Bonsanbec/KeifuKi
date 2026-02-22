@@ -15,6 +15,7 @@ import '../widgets/capture/text_input_capture.dart';
 import '../widgets/capture/audio_input_capture.dart';
 import '../widgets/capture/photo_input_capture.dart';
 import '../widgets/capture/video_input_capture.dart';
+import '../widgets/question_overlay.dart';
 import 'submission_ritual_screen.dart';
 
 class InputCaptureScreen extends StatefulWidget {
@@ -212,20 +213,79 @@ class _InputCaptureScreenState extends State<InputCaptureScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Capturar respuesta'),
-        trailing: _saving
-            ? const CupertinoActivityIndicator()
-            : CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: _saveResponse,
-                child: const Text('Guardar'),
-              ),
-      ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: _buildCaptureWidget(),
+        top: false,
+        bottom: false,
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF0A1023),
+                      Color(0xFF102A5A),
+                      Color(0xFF1A3529),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              left: 10,
+              child: CupertinoButton(
+                padding: const EdgeInsets.all(10),
+                minimumSize: const Size(44, 44),
+                color: const Color(0xAA0D1A2D),
+                borderRadius: BorderRadius.circular(22),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Icon(
+                  CupertinoIcons.back,
+                  color: Color(0xFFF4FAFF),
+                  size: 26,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 18,
+              right: 18,
+              top: 220,
+              bottom: 112,
+              child: Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0x8F061125),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: _buildCaptureWidget(),
+              ),
+            ),
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 26,
+              child: CupertinoButton(
+                color: const Color(0xFF2C5141),
+                borderRadius: BorderRadius.circular(20),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                onPressed: _saving ? null : _saveResponse,
+                child: _saving
+                    ? const CupertinoActivityIndicator(color: Color(0xFFF4FAFF))
+                    : const Text(
+                        'Guardar recuerdo',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFF4FAFF),
+                        ),
+                      ),
+              ),
+            ),
+            QuestionOverlay(text: widget.question.text),
+          ],
         ),
       ),
     );

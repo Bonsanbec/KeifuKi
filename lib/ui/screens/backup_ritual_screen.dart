@@ -51,28 +51,25 @@ class _BackupRitualScreenState extends State<BackupRitualScreen>
     } catch (_) {
       // Fallo silencioso: el ritual igualmente concluye
     } finally {
-      // Dejar que la animación concluya antes de salir
-      Timer(const Duration(milliseconds: 2600), () {
-        if (!mounted) return;
+      if (!mounted) return;
 
-        Navigator.of(context).pop();
+      Navigator.of(context).pop();
 
-        showCupertinoDialog(
-          context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Respaldo completado'),
-            content: const Text('Hemos respaldado tus recuerdos.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Aceptar'),
-                onPressed: () {
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
-        );
-      });
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Respaldo completado'),
+          content: const Text('Hemos respaldado tus recuerdos.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Aceptar'),
+              onPressed: () {
+                Navigator.of(this.context).pop();
+              },
+            ),
+          ],
+        ),
+      );
     }
   }
 

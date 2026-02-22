@@ -1,7 +1,8 @@
 import 'dart:math' as math;
+
 import 'package:flutter/cupertino.dart';
 
-import '../../domain/tree_state.dart';
+import '../../domain/tree_projection.dart';
 
 class ProceduralTreeNode {
   final Offset start;
@@ -21,8 +22,18 @@ class ProceduralTreeNode {
     required this.growthIndex,
     required this.isTerminal,
   });
+}
 
-  Offset pointAt(double t) => Offset.lerp(start, end, t.clamp(0.0, 1.0)) ?? end;
+class ProceduralFruitPlacement {
+  final String responseId;
+  final Offset center;
+  final double radius;
+
+  const ProceduralFruitPlacement({
+    required this.responseId,
+    required this.center,
+    required this.radius,
+  });
 }
 
 class _DraftNode {
@@ -49,7 +60,7 @@ class ProceduralTreePainter extends CustomPainter {
   final int growthSeed;
   final double growthRatio;
   final double vitality;
-  final List<StructuralMarker> structuralMarkers;
+  final List<TreeFruit> fruits;
 
   late final List<ProceduralTreeNode> _nodes = _generateNodes(
     seed: growthSeed,
@@ -60,23 +71,27 @@ class ProceduralTreePainter extends CustomPainter {
     required this.growthSeed,
     required this.growthRatio,
     required this.vitality,
-    required this.structuralMarkers,
+    required this.fruits,
   });
+
+  List<ProceduralTreeNode> _visibleNodes() {
+    return _nodes
+        .where((n) => n.growthIndex <= growthRatio)
+        .toList(growable: false);
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
 
     final trunkColor = Color.lerp(
-      const Color(0xFF4E342E),
-      const Color(0xFF6D4C41),
+      const Color(0xFF5A3B30),
+      const Color(0xFF7A4E3C),
       vitality.clamp(0.0, 1.0),
     )!;
 
+    final visible = _visibleNodes();
     final minSide = math.min(size.width, size.height);
-    final visible = _nodes
-        .where((n) => n.growthIndex <= growthRatio)
-        .toList(growable: false);
 
     for (final node in visible) {
       final start = Offset(
@@ -92,7 +107,7 @@ class ProceduralTreePainter extends CustomPainter {
 
       final branchPaint = Paint()
         ..color = trunkColor.withValues(
-          alpha: ((0.92 - (node.depth * 0.03)).clamp(0.35, 0.92)).toDouble(),
+          alpha: ((0.94 - (node.depth * 0.03)).clamp(0.38, 0.94)).toDouble(),
         )
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round
@@ -115,9 +130,9 @@ class ProceduralTreePainter extends CustomPainter {
         .toList(growable: false);
     if (terminals.isEmpty) return;
 
-    final leafSaturation = (0.35 + (vitality * 0.65)).clamp(0.0, 1.0);
+    final leafSaturation = (0.3 + (vitality * 0.7)).clamp(0.0, 1.0);
     final leafCountJitter = _seededRandom(growthSeed ^ 0x55AA).nextDouble();
-    final desiredLeaves = (terminals.length * (0.55 + (leafCountJitter * 0.35)))
+    final desiredLeaves = (terminals.length * (0.5 + (leafCountJitter * 0.4)))
         .floor();
 
     int drawn = 0;
@@ -136,14 +151,14 @@ class ProceduralTreePainter extends CustomPainter {
       );
       final r = _seededRandom(localSeed);
 
-      final radius = (2.8 + r.nextDouble() * 3.6) * leafProgress;
-      final dx = (r.nextDouble() - 0.5) * 8;
-      final dy = (r.nextDouble() - 0.5) * 8;
+      final radius = (2.6 + r.nextDouble() * 3.8) * leafProgress;
+      final dx = (r.nextDouble() - 0.5) * 10;
+      final dy = (r.nextDouble() - 0.5) * 10;
 
-      final hue = 105 + (r.nextDouble() * 16);
-      final sat = 0.45 + (leafSaturation * 0.4);
-      final light = 0.34 + (leafSaturation * 0.18);
-      final color = HSLColor.fromAHSL(0.85, hue, sat, light).toColor();
+      final hue = 104 + (r.nextDouble() * 18);
+      final sat = 0.42 + (leafSaturation * 0.42);
+      final light = 0.3 + (leafSaturation * 0.2);
+      final color = HSLColor.fromAHSL(0.88, hue, sat, light).toColor();
 
       final paint = Paint()
         ..color = color.withValues(alpha: (leafProgress * 0.9));
@@ -157,16 +172,52 @@ class ProceduralTreePainter extends CustomPainter {
     Size size,
     List<ProceduralTreeNode> visible,
   ) {
-    if (structuralMarkers.isEmpty || visible.isEmpty) return;
+    final placements = computeFruitPlacements(
+      growthSeed: growthSeed,
+      growthRatio: growthRatio,
+      vitality: vitality,
+      fruits: fruits,
+      size: size,
+      precomputedVisibleNodes: visible,
+    );
+
+    final fruitColor = Color.lerp(
+      const Color(0xFFC2B458),
+      const Color(0xFFF24A2E),
+      (0.35 + (vitality * 0.65)).clamp(0.0, 1.0),
+    )!;
+
+    final paint = Paint()..color = fruitColor.withValues(alpha: 0.94);
+    for (final placement in placements) {
+      canvas.drawCircle(placement.center, placement.radius, paint);
+    }
+  }
+
+  static List<ProceduralFruitPlacement> computeFruitPlacements({
+    required int growthSeed,
+    required double growthRatio,
+    required double vitality,
+    required List<TreeFruit> fruits,
+    required Size size,
+    List<ProceduralTreeNode>? precomputedVisibleNodes,
+  }) {
+    final visible =
+        precomputedVisibleNodes ??
+        _generateNodes(
+          seed: growthSeed,
+          maxDepth: maxDepth,
+        ).where((n) => n.growthIndex <= growthRatio).toList(growable: false);
+
+    if (visible.isEmpty || fruits.isEmpty) return const [];
 
     final candidates = visible
         .where((n) => n.depth >= 3)
         .toList(growable: false);
-    if (candidates.isEmpty) return;
+    if (candidates.isEmpty) return const [];
 
-    for (final marker in structuralMarkers) {
-      final key =
-          '$growthSeed|fruit|${marker.id}|${marker.createdAt.millisecondsSinceEpoch}';
+    final placements = <ProceduralFruitPlacement>[];
+    for (final fruit in fruits) {
+      final key = '$growthSeed|fruit|${fruit.responseId}|${fruit.questionId}';
       final index = _stableHash(key) % candidates.length;
       final node = candidates[index];
 
@@ -176,22 +227,23 @@ class ProceduralTreePainter extends CustomPainter {
       );
       if (maturity <= 0) continue;
 
-      final end = Offset(node.end.dx * size.width, node.end.dy * size.height);
-      final fruitRadius =
-          (3.2 + marker.intensity.toDouble()).clamp(3.0, 7.0) * maturity;
+      final center = Offset(
+        node.end.dx * size.width,
+        node.end.dy * size.height,
+      );
+      final radius =
+          (3.4 + fruit.intensity.toDouble()).clamp(3.2, 7.4) * maturity;
 
-      final fruitColor = Color.lerp(
-        const Color(0xFFBDB76B),
-        const Color(0xFFE53935),
-        (0.35 + (vitality * 0.65)).clamp(0.0, 1.0),
-      )!;
-
-      final paint = Paint()
-        ..color = fruitColor.withValues(
-          alpha: ((0.45 + maturity * 0.55).clamp(0.0, 1.0)).toDouble(),
-        );
-      canvas.drawCircle(end, fruitRadius, paint);
+      placements.add(
+        ProceduralFruitPlacement(
+          responseId: fruit.responseId,
+          center: center,
+          radius: radius,
+        ),
+      );
     }
+
+    return placements;
   }
 
   static List<ProceduralTreeNode> _generateNodes({
@@ -236,8 +288,8 @@ class ProceduralTreePainter extends CustomPainter {
       final jitterA = (random.nextDouble() - 0.5) * 0.14;
       final jitterB = (random.nextDouble() - 0.5) * 0.14;
 
-      final childLengthFactor = (0.7 + (random.nextDouble() * 0.1));
-      final childThicknessFactor = (0.7 + (random.nextDouble() * 0.08));
+      final childLengthFactor = 0.7 + (random.nextDouble() * 0.1);
+      final childThicknessFactor = 0.7 + (random.nextDouble() * 0.08);
 
       int childCount = 2;
       final branchingChance = (0.18 + (remaining * 0.02)).clamp(0.0, 0.38);
@@ -277,7 +329,7 @@ class ProceduralTreePainter extends CustomPainter {
     }
 
     build(
-      start: const Offset(0.5, 0.96),
+      start: const Offset(0.5, 0.95),
       angle: math.pi / 2,
       length: 0.19,
       thickness: 0.03,
@@ -315,17 +367,18 @@ class ProceduralTreePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ProceduralTreePainter oldDelegate) {
+    final oldFingerprint = oldDelegate.fruits.fold<int>(
+      0,
+      (sum, fruit) => sum ^ fruit.responseId.hashCode ^ fruit.intensity,
+    );
+    final newFingerprint = fruits.fold<int>(
+      0,
+      (sum, fruit) => sum ^ fruit.responseId.hashCode ^ fruit.intensity,
+    );
+
     return oldDelegate.growthSeed != growthSeed ||
         oldDelegate.growthRatio != growthRatio ||
         oldDelegate.vitality != vitality ||
-        oldDelegate.structuralMarkers.length != structuralMarkers.length ||
-        oldDelegate.structuralMarkers.fold<int>(
-              0,
-              (sum, marker) => sum ^ marker.id.hashCode ^ marker.intensity,
-            ) !=
-            structuralMarkers.fold<int>(
-              0,
-              (sum, marker) => sum ^ marker.id.hashCode ^ marker.intensity,
-            );
+        oldFingerprint != newFingerprint;
   }
 }

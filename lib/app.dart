@@ -10,7 +10,7 @@ class KeifuKiApp extends StatelessWidget {
     return const CupertinoApp(
       debugShowCheckedModeBanner: false,
       title: 'KeifuKi',
-      home: TreeHomeScreen(),
+      home: SafeArea(child: TreeHomeScreen()),
     );
   }
 }
