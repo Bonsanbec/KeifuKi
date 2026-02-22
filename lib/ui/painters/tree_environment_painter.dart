@@ -2,23 +2,28 @@ import 'package:flutter/cupertino.dart';
 
 class TreeGroundPainter extends CustomPainter {
   final double vitality;
+  final double soilMoistureLevel;
 
-  const TreeGroundPainter({required this.vitality});
+  const TreeGroundPainter({
+    required this.vitality,
+    this.soilMoistureLevel = 0.5,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final v = vitality.clamp(0.0, 1.0);
 
+    final moisture = soilMoistureLevel.clamp(0.0, 1.0);
     final hillColor = Color.lerp(
-      const Color(0xFF2D3B1E),
-      const Color(0xFF3D5A2A),
-      v,
+      const Color(0xFF202713),
+      const Color(0xFF4B6A34),
+      (v * 0.55) + (moisture * 0.45),
     )!;
 
     final hillShadow = Color.lerp(
-      const Color(0xFF1E2515),
-      const Color(0xFF24361A),
-      v,
+      const Color(0xFF141A0E),
+      const Color(0xFF2D4320),
+      (v * 0.4) + (moisture * 0.6),
     )!;
 
     final yBase = size.height * 0.875;
@@ -80,6 +85,7 @@ class TreeGroundPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant TreeGroundPainter oldDelegate) {
-    return oldDelegate.vitality != vitality;
+    return oldDelegate.vitality != vitality ||
+        oldDelegate.soilMoistureLevel != soilMoistureLevel;
   }
 }

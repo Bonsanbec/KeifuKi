@@ -60,6 +60,7 @@ class ProceduralTreePainter extends CustomPainter {
   final int growthSeed;
   final double growthRatio;
   final double vitality;
+  final double absorptionCapacity;
   final List<TreeFruit> fruits;
 
   late final List<ProceduralTreeNode> _nodes = _generateNodes(
@@ -71,6 +72,7 @@ class ProceduralTreePainter extends CustomPainter {
     required this.growthSeed,
     required this.growthRatio,
     required this.vitality,
+    required this.absorptionCapacity,
     required this.fruits,
   });
 
@@ -92,6 +94,20 @@ class ProceduralTreePainter extends CustomPainter {
 
     final visible = _visibleNodes();
     final minSide = math.min(size.width, size.height);
+
+    if (absorptionCapacity > 0.7) {
+      final glow = ((absorptionCapacity - 0.7) / 0.3).clamp(0.0, 1.0);
+      final glowPaint = Paint()
+        ..color = const Color(
+          0x99EAD7B0,
+        ).withValues(alpha: 0.08 + (glow * 0.18))
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+      canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.82),
+        minSide * (0.14 + (glow * 0.05)),
+        glowPaint,
+      );
+    }
 
     for (final node in visible) {
       final start = Offset(
@@ -379,6 +395,7 @@ class ProceduralTreePainter extends CustomPainter {
     return oldDelegate.growthSeed != growthSeed ||
         oldDelegate.growthRatio != growthRatio ||
         oldDelegate.vitality != vitality ||
+        oldDelegate.absorptionCapacity != absorptionCapacity ||
         oldFingerprint != newFingerprint;
   }
 }

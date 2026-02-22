@@ -272,6 +272,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                       child: CustomPaint(
                         painter: TreeGroundPainter(
                           vitality: projection.vitality,
+                          soilMoistureLevel: projection.soilMoistureLevel,
                         ),
                       ),
                     ),
@@ -291,13 +292,42 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                           final swayAngle =
                               (centered * 0.012) +
                               (math.sin(phase * 2) * 0.0018);
+                          final wateringAgeSeconds =
+                              projection.lastWateredAt == null
+                              ? double.infinity
+                              : DateTime.now()
+                                        .difference(projection.lastWateredAt!)
+                                        .inMilliseconds /
+                                    1000.0;
+                          final isRecentWatering = wateringAgeSeconds <= 90;
+                          final wateringDecay = isRecentWatering
+                              ? (1 - (wateringAgeSeconds / 90)).clamp(0.0, 1.0)
+                              : 0.0;
+
+                          double growthPulseScale = 1.0;
+                          double lowCapacityWaveY = 0.0;
+                          if (isRecentWatering &&
+                              projection.lastAbsorptionAtWatering > 0.7) {
+                            growthPulseScale +=
+                                math.sin(phase * 3).abs() *
+                                0.017 *
+                                wateringDecay;
+                          } else if (isRecentWatering &&
+                              projection.lastAbsorptionAtWatering < 0.3) {
+                            lowCapacityWaveY =
+                                math.sin(phase * 3) * 1.8 * wateringDecay;
+                          }
 
                           return Transform.translate(
-                            offset: Offset(swayX, 0),
-                            child: Transform.rotate(
-                              angle: swayAngle,
+                            offset: Offset(swayX, lowCapacityWaveY),
+                            child: Transform.scale(
+                              scale: growthPulseScale,
                               alignment: Alignment.bottomCenter,
-                              child: child,
+                              child: Transform.rotate(
+                                angle: swayAngle,
+                                alignment: Alignment.bottomCenter,
+                                child: child,
+                              ),
                             ),
                           );
                         },
@@ -309,6 +339,8 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                                   growthSeed: projection.growthSeed,
                                   growthRatio: projection.growthRatio,
                                   vitality: projection.vitality,
+                                  absorptionCapacity:
+                                      projection.absorptionCapacity,
                                   fruits: projection.availableFruits,
                                 ),
                               ),
@@ -424,40 +456,54 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                     Positioned(
                       right: 16,
                       bottom: 24,
-                      child: CupertinoButton(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        minimumSize: const Size(52, 52),
-                        color: const Color(0xDD2E4E3E),
-                        borderRadius: BorderRadius.circular(20),
-                        onPressed: vm.nextQuestion == null
-                            ? null
-                            : () async {
-                                await Navigator.of(context).push(
-                                  CupertinoPageRoute(
-                                    builder: (_) => CaptureScreen(
-                                      question: vm.nextQuestion!,
+                      child: Opacity(
+                        opacity: 0.55 + (projection.absorptionCapacity * 0.45),
+                        child: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          minimumSize: const Size(52, 52),
+                          color: Color.lerp(
+                            const Color(0xA03A3C3D),
+                            const Color(0xDD2E6A52),
+                            projection.absorptionCapacity.clamp(0.0, 1.0),
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          onPressed: vm.nextQuestion == null
+                              ? null
+                              : () async {
+                                  await Navigator.of(context).push(
+                                    CupertinoPageRoute(
+                                      builder: (_) => CaptureScreen(
+                                        question: vm.nextQuestion!,
+                                      ),
+                                    ),
+                                  );
+                                  await _refresh();
+                                },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🚿', style: TextStyle(fontSize: 24)),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Responder',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color.lerp(
+                                    const Color(0x99E9F3FF),
+                                    const Color(0xFFE9F3FF),
+                                    projection.absorptionCapacity.clamp(
+                                      0.0,
+                                      1.0,
                                     ),
                                   ),
-                                );
-                                await _refresh();
-                              },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('🚿', style: TextStyle(fontSize: 24)),
-                            SizedBox(width: 8),
-                            Text(
-                              'Responder',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFE9F3FF),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

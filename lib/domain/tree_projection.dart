@@ -20,6 +20,10 @@ class TreeProjection {
   final bool isPlanted;
   final String? identityName;
   final double growthRatio;
+  final double absorptionCapacity;
+  final double effectiveGrowth;
+  final double soilMoistureLevel;
+  final double lastAbsorptionAtWatering;
   final double vitality;
   final List<StructuralMarker> structuralMarkers;
   final int growthSeed;
@@ -31,6 +35,10 @@ class TreeProjection {
     required this.isPlanted,
     required this.identityName,
     required this.growthRatio,
+    required this.absorptionCapacity,
+    required this.effectiveGrowth,
+    required this.soilMoistureLevel,
+    required this.lastAbsorptionAtWatering,
     required this.vitality,
     required this.structuralMarkers,
     required this.growthSeed,
