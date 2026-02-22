@@ -171,14 +171,39 @@ class ProceduralTreePainter extends CustomPainter {
       final dx = (r.nextDouble() - 0.5) * 10;
       final dy = (r.nextDouble() - 0.5) * 10;
 
-      final hue = 104 + (r.nextDouble() * 18);
-      final sat = 0.42 + (leafSaturation * 0.42);
-      final light = 0.3 + (leafSaturation * 0.2);
-      final color = HSLColor.fromAHSL(0.88, hue, sat, light).toColor();
+      // Procedural green scale: mixes depth + growth index + seeded jitter.
+      final depthFactor = (node.depth / maxDepth).clamp(0.0, 1.0);
+      final growthFactor = node.growthIndex.clamp(0.0, 1.0);
+      final toneJitter = r.nextDouble();
 
-      final paint = Paint()
+      final hue = 100 + (depthFactor * 9) + (toneJitter * 16);
+      final sat = (0.34 + (leafSaturation * 0.36) + (growthFactor * 0.12))
+          .clamp(0.2, 1.0);
+      final light =
+          (0.24 + (leafSaturation * 0.18) + ((1 - depthFactor) * 0.09)).clamp(
+            0.14,
+            0.82,
+          );
+      final color = HSLColor.fromAHSL(0.88, hue, sat, light).toColor();
+      final outlineColor = HSLColor.fromColor(color)
+          .withLightness(
+            (HSLColor.fromColor(color).lightness - 0.08).clamp(0.0, 1.0),
+          )
+          .withSaturation(
+            (HSLColor.fromColor(color).saturation + 0.04).clamp(0.0, 1.0),
+          )
+          .toColor();
+
+      final fillPaint = Paint()
         ..color = color.withValues(alpha: (leafProgress * 0.9));
-      canvas.drawCircle(end.translate(dx, dy), radius, paint);
+      final strokePaint = Paint()
+        ..color = outlineColor.withValues(alpha: (leafProgress * 0.86))
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (0.7 + (radius * 0.12)).clamp(0.6, 1.3);
+
+      final center = end.translate(dx, dy);
+      canvas.drawCircle(center, radius, fillPaint);
+      canvas.drawCircle(center, radius, strokePaint);
       drawn += 1;
     }
   }
