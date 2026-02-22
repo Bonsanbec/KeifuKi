@@ -18,8 +18,6 @@ class CaptureScreen extends StatelessWidget {
 
     return CupertinoPageScaffold(
       child: SafeArea(
-        top: false,
-        bottom: false,
         child: Stack(
           children: [
             const Positioned.fill(

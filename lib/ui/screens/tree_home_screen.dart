@@ -178,8 +178,6 @@ class _TreeHomeScreenState extends State<TreeHomeScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       child: SafeArea(
-        top: false,
-        bottom: false,
         child: FutureBuilder<_TreeHomeViewModel>(
           future: _future,
           builder: (context, snapshot) {
