@@ -42,7 +42,7 @@ class NotificationService {
     String? identityName,
   ) async {
     final displayName = (identityName == null || identityName.trim().isEmpty)
-        ? 'Amigo'
+        ? 'Colega'
         : identityName.trim();
 
     try {
