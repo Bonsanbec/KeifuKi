@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
   static const Duration _wateringReminderDelay = Duration(hours: 24);
@@ -11,6 +12,8 @@ class NotificationService {
     required DateTime? lastWateredAt,
     required String? identityName,
   }) async {
+    await _ensurePermission();
+
     await cancelWateringReminder();
 
     if (lastWateredAt == null) {
@@ -39,18 +42,25 @@ class NotificationService {
     String? identityName,
   ) async {
     final displayName = (identityName == null || identityName.trim().isEmpty)
-        ? 'tu árbol'
+        ? 'Amigo'
         : identityName.trim();
 
     try {
       await _channel.invokeMethod('schedule', {
         'id': wateringReminderId,
-        'title': 'Tu árbol te recuerda volver',
-        'body': '$displayName necesita un riego suave para seguir creciendo.',
+        'title': '$displayName, ¿estás ahí?',
+        'body': 'Tu árbol necesita un riego suave para seguir creciendo.',
         'scheduled_at_millis': dateTime.millisecondsSinceEpoch,
       });
     } catch (_) {
       // Silent fallback if native implementation is not wired yet.
+    }
+  }
+
+  static Future<void> _ensurePermission() async {
+    final status = await Permission.notification.status;
+    if (!status.isGranted) {
+      await Permission.notification.request();
     }
   }
 }
