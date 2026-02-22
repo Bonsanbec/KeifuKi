@@ -154,7 +154,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                   Text('Vitalidad: ${projection.vitalityLabel}'),
                   const SizedBox(height: 8),
                   Text(
-                    'Tiempo desde último riego: ${_timeSinceHHMM(projection.lastWateredAt)}',
+                    'Último riego: Hace ${_timeSinceHHMM(projection.lastWateredAt)} horas',
                   ),
                   const SizedBox(height: 8),
                   Text('Frutos recogidos: ${vm.harvestedCount}'),
