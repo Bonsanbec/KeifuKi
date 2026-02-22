@@ -117,9 +117,15 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
         '${value.year}';
   }
 
-  int _daysSince(DateTime? value) {
-    if (value == null) return 0;
-    return DateTime.now().difference(value).inDays;
+  String _timeSinceHHMM(DateTime? value) {
+    if (value == null) return '00:00';
+
+    final diff = DateTime.now().difference(value);
+    final totalMinutes = diff.isNegative ? 0 : diff.inMinutes;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
   }
 
   Future<void> _openInfo(_TreeHomeViewModel vm) async {
@@ -148,7 +154,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                   Text('Vitalidad: ${projection.vitalityLabel}'),
                   const SizedBox(height: 8),
                   Text(
-                    'Días desde último riego: ${_daysSince(projection.lastWateredAt)}',
+                    'Tiempo desde último riego: ${_timeSinceHHMM(projection.lastWateredAt)}',
                   ),
                   const SizedBox(height: 8),
                   Text('Frutos recogidos: ${vm.harvestedCount}'),
