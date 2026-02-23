@@ -603,11 +603,6 @@ class QuestionRegistry {
       category: 'work',
     ),
     Question(
-      id: 'work_pride_origin',
-      text: '¿Qué logro laboral te hizo sentir verdaderamente orgulloso?',
-      category: 'work',
-    ),
-    Question(
       id: 'work_failure_hard',
       text: '¿Cuál ha sido uno de los fracasos laborales que más te marcó?',
       category: 'work',
@@ -1082,7 +1077,7 @@ class QuestionRegistry {
     Question(
       id: 'legacy_secret_pride',
       text:
-          '¿De qué logro te sientes orgulloso aunque casi nunca lo menciones?',
+          '¿Qué logro casi nunca mencionas?',
       category: 'legacy',
     ),
     Question(
