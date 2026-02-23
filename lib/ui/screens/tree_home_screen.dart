@@ -462,43 +462,40 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                     Positioned(
                       right: 16,
                       bottom: 24,
-                      child: Opacity(
-                        opacity: 0.55 + (projection.absorptionCapacity * 0.45),
-                        child: CupertinoButton(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          minimumSize: const Size(52, 52),
-                          color: const Color(0xAA1B2F22),
-                          borderRadius: BorderRadius.circular(20),
-                          onPressed: vm.nextQuestion == null
-                              ? null
-                              : () async {
-                                  await Navigator.of(context).push(
-                                    CupertinoPageRoute(
-                                      builder: (_) => CaptureScreen(
-                                        question: vm.nextQuestion!,
-                                      ),
+                      child: CupertinoButton(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        minimumSize: const Size(52, 52),
+                        color: const Color(0xAA1B2F22),
+                        borderRadius: BorderRadius.circular(20),
+                        onPressed: vm.nextQuestion == null
+                            ? null
+                            : () async {
+                                await Navigator.of(context).push(
+                                  CupertinoPageRoute(
+                                    builder: (_) => CaptureScreen(
+                                      question: vm.nextQuestion!,
                                     ),
-                                  );
-                                  await _refresh();
-                                },
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Text('🚿', style: TextStyle(fontSize: 24)),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Responder',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFF5FAFF),
-                                ),
+                                  ),
+                                );
+                                await _refresh();
+                              },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('🚿', style: TextStyle(fontSize: 24)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Responder',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFF5FAFF),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
