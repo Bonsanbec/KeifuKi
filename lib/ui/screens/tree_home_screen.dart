@@ -470,11 +470,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                             vertical: 12,
                           ),
                           minimumSize: const Size(52, 52),
-                          color: Color.lerp(
-                            const Color(0xA03A3C3D),
-                            const Color(0xDD2E6A52),
-                            projection.absorptionCapacity.clamp(0.0, 1.0),
-                          ),
+                          color: const Color(0xAA1B2F22),
                           borderRadius: BorderRadius.circular(20),
                           onPressed: vm.nextQuestion == null
                               ? null
@@ -498,14 +494,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
-                                  color: Color.lerp(
-                                    const Color(0x99E9F3FF),
-                                    const Color(0xFFE9F3FF),
-                                    projection.absorptionCapacity.clamp(
-                                      0.0,
-                                      1.0,
-                                    ),
-                                  ),
+                                  color: Color(0xFFF5FAFF),
                                 ),
                               ),
                             ],
