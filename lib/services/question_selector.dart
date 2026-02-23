@@ -1,9 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
-import '../domain/question.dart';
-import '../domain/question_registry.dart';
 import '../data/question_usage_dao.dart';
 import '../data/system_state_dao.dart';
+import '../domain/question.dart';
+import '../domain/question_registry.dart';
 
 class SelectedQuestion {
   final String id;
@@ -35,68 +36,162 @@ class QuestionUsage {
 
 /// Selects the next question to present based on declared rules
 /// and recorded usage.
-///
-/// This class contains no persistence logic and no randomness.
-/// If randomness is desired, it must be injected explicitly.
 class QuestionSelector {
   /// Selects the next valid question.
-  ///
-  /// Returns null if no question is currently eligible.
-  static Question? selectNext({
+  static Question selectNext({
     required DateTime now,
     required Map<String, QuestionUsage> usageByQuestionId,
-    required bool hasIdentityName,
+    required int growthSeed,
+    required bool hasIdentityResponse,
   }) {
-    if (!hasIdentityName) {
-      return QuestionRegistry.byId[QuestionRegistry.identityQuestionId];
+    final identityQuestion =
+        QuestionRegistry.byId[QuestionRegistry.identityQuestionId];
+    if (identityQuestion == null) {
+      throw StateError(
+        'Identity question is missing: ${QuestionRegistry.identityQuestionId}',
+      );
     }
 
-    final activeQuestions = QuestionRegistry.active;
-    final filteredQuestions = activeQuestions
+    // Hard rule: first question must be identity if no identity response exists.
+    if (!hasIdentityResponse) {
+      return identityQuestion;
+    }
+
+    // System questions are excluded after identity.
+    final candidatePool = QuestionRegistry.active
         .where((q) => q.id != QuestionRegistry.identityQuestionId)
+        .where((q) => q.category != 'system')
         .toList(growable: false);
 
-    // 1. Prefer questions never answered.
-    for (final question in filteredQuestions) {
-      final usage = usageByQuestionId[question.id];
-      if (usage == null || usage.timesAnswered == 0) {
-        return question;
+    // Deterministic ordering independent of QuestionRegistry.all declaration.
+    final normalizedPool = [...candidatePool]
+      ..sort((a, b) => a.id.compareTo(b.id));
+
+    // Track most recently answered question to avoid immediate repetition.
+    String? mostRecentQuestionId;
+    DateTime? mostRecentAt;
+    for (final entry in usageByQuestionId.values) {
+      final last = entry.lastAnsweredAt;
+      if (last == null) continue;
+      if (mostRecentAt == null || last.isAfter(mostRecentAt)) {
+        mostRecentAt = last;
+        mostRecentQuestionId = entry.questionId;
       }
     }
 
-    // 2. Consider repeatable questions that satisfy cooldown.
-    for (final question in filteredQuestions.where((q) => q.repeatable)) {
-      final usage = usageByQuestionId[question.id];
-      if (usage == null || usage.lastAnsweredAt == null) {
-        return question;
-      }
-
-      final cooldown = question.cooldownDuration;
-      if (cooldown == null) {
-        return question;
-      }
-
-      final elapsed = now.difference(usage.lastAnsweredAt!);
-      if (elapsed >= cooldown) {
-        return question;
-      }
+    List<Question> unansweredEligible() {
+      return normalizedPool
+          .where((q) {
+            final usage = usageByQuestionId[q.id];
+            return usage == null || usage.timesAnswered == 0;
+          })
+          .toList(growable: false);
     }
 
-    // 3. No eligible question.
-    return null;
+    List<Question> repeatableCooldownEligible() {
+      return normalizedPool
+          .where((q) => q.repeatable)
+          .where((q) {
+            final usage = usageByQuestionId[q.id];
+            if (usage == null || usage.lastAnsweredAt == null) return true;
+            final cooldown = q.cooldownDuration;
+            if (cooldown == null) return true;
+            return now.difference(usage.lastAnsweredAt!) >= cooldown;
+          })
+          .toList(growable: false);
+    }
+
+    List<Question> removeImmediateRepeat(List<Question> questions) {
+      if (questions.length <= 1 || mostRecentQuestionId == null) {
+        return questions;
+      }
+      final filtered = questions
+          .where((q) => q.id != mostRecentQuestionId)
+          .toList(growable: false);
+      return filtered.isEmpty ? questions : filtered;
+    }
+
+    Question pickDeterministic(List<Question> options, String tier) {
+      final sortedOptions = [...options]..sort((a, b) => a.id.compareTo(b.id));
+      final totalAnswers = usageByQuestionId.values.fold<int>(
+        0,
+        (sum, usage) => sum + usage.timesAnswered,
+      );
+      final dayBucket = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).millisecondsSinceEpoch;
+      final optionIds = sortedOptions.map((q) => q.id).join('|');
+      final seed = _stableHash(
+        '$growthSeed|$totalAnswers|$dayBucket|$tier|$optionIds',
+      );
+      final random = math.Random(seed);
+      return sortedOptions[random.nextInt(sortedOptions.length)];
+    }
+
+    final tier1 = removeImmediateRepeat(unansweredEligible());
+    if (tier1.isNotEmpty) {
+      return pickDeterministic(tier1, 'tier1-unanswered');
+    }
+
+    final tier2 = removeImmediateRepeat(repeatableCooldownEligible());
+    if (tier2.isNotEmpty) {
+      return pickDeterministic(tier2, 'tier2-repeatable-cooldown');
+    }
+
+    // Explicit fallback: if nothing is eligible, repeat oldest answered
+    // repeatable question first, then oldest non-system question.
+    final repeatableFallback =
+        normalizedPool.where((q) => q.repeatable).toList(growable: false)
+          ..sort((a, b) {
+            final aLast = usageByQuestionId[a.id]?.lastAnsweredAt;
+            final bLast = usageByQuestionId[b.id]?.lastAnsweredAt;
+            if (aLast == null && bLast == null) return a.id.compareTo(b.id);
+            if (aLast == null) return -1;
+            if (bLast == null) return 1;
+            final cmp = aLast.compareTo(bLast);
+            if (cmp != 0) return cmp;
+            return a.id.compareTo(b.id);
+          });
+    final tier3 = removeImmediateRepeat(repeatableFallback);
+    if (tier3.isNotEmpty) {
+      return tier3.first;
+    }
+
+    final generalFallback = [...normalizedPool]
+      ..sort((a, b) {
+        final aLast = usageByQuestionId[a.id]?.lastAnsweredAt;
+        final bLast = usageByQuestionId[b.id]?.lastAnsweredAt;
+        if (aLast == null && bLast == null) return a.id.compareTo(b.id);
+        if (aLast == null) return -1;
+        if (bLast == null) return 1;
+        final cmp = aLast.compareTo(bLast);
+        if (cmp != 0) return cmp;
+        return a.id.compareTo(b.id);
+      });
+    final tier4 = removeImmediateRepeat(generalFallback);
+    if (tier4.isNotEmpty) {
+      return tier4.first;
+    }
+
+    // Last safety guard: never return null.
+    return identityQuestion;
   }
 
-  static Future<SelectedQuestion?> next() async {
+  static Future<SelectedQuestion> next() async {
     final usageMap = await QuestionUsageDao.fetchAll();
-    final hasIdentityName = await SystemStateDao.hasIdentityName();
+    final treeState = await SystemStateDao.ensureTreeState();
+    final identityUsage = usageMap[QuestionRegistry.identityQuestionId];
+    final hasIdentityResponse = (identityUsage?.timesAnswered ?? 0) > 0;
+
     final question = selectNext(
       now: DateTime.now(),
       usageByQuestionId: usageMap,
-      hasIdentityName: hasIdentityName,
+      growthSeed: treeState.growthSeed,
+      hasIdentityResponse: hasIdentityResponse,
     );
-    if (question == null) {
-      return null;
-    }
+
     return SelectedQuestion(
       id: question.id,
       text: question.text,
@@ -104,10 +199,17 @@ class QuestionSelector {
     );
   }
 
-  // Esta puede quedarse si aún la usas en algún lado,
-  // pero ya no es la vía principal.
   static Future<String> nextQuestionText() async {
     final q = await next();
-    return q?.text ?? 'No hay preguntas disponibles por ahora.';
+    return q.text;
+  }
+
+  static int _stableHash(String input) {
+    int hash = 0x811c9dc5;
+    for (final codeUnit in input.codeUnits) {
+      hash ^= codeUnit;
+      hash = (hash * 0x01000193) & 0xffffffff;
+    }
+    return hash & 0x7fffffff;
   }
 }
