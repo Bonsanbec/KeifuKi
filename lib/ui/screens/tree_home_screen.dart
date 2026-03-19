@@ -133,6 +133,12 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
   }
 
+  String _viewerLabel(_TreeHomeViewModel vm) {
+    final String name = (vm.projection.identityName ?? '').trim();
+    final String displayName = name.isEmpty ? 'usuario desconocido' : name;
+    return 'Archivo de $displayName en modo de lectura';
+  }
+
   Future<void> _openInfo(_TreeHomeViewModel vm) async {
     final projection = vm.projection;
 
@@ -428,22 +434,22 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                     if (_isReadOnlyMode)
                       Positioned(
                         top: 18,
-                        left: 104,
-                        right: 84,
+                        left: 120,
+                        right: 120,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
+                            horizontal: 16,
+                            vertical: 11,
                           ),
                           decoration: BoxDecoration(
                             color: const Color(0xD91D3550),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: const Color(0x80E4F0FF)),
                           ),
-                          child: const Text(
-                            'Respaldo abierto · Solo lectura',
+                          child: Text(
+                            _viewerLabel(vm),
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFFF4FAFF),
@@ -467,83 +473,83 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                         ),
                       ),
                     ),
-                    Positioned(
-                      bottom: 24,
-                      left: 16,
-                      child: CupertinoButton(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        minimumSize: const Size(52, 52),
-                        color: const Color(0xAA1B2F22),
-                        borderRadius: BorderRadius.circular(20),
-                        onPressed: _isReadOnlyMode
-                            ? null
-                            : () {
-                                Navigator.of(context).push(
-                                  CupertinoPageRoute(
-                                    builder: (_) => const BackupRitualScreen(),
-                                  ),
-                                );
-                              },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🪏', style: TextStyle(fontSize: 24)),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Respaldar ahora',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFF5FAFF),
+                    if (!_isReadOnlyMode)
+                      Positioned(
+                        bottom: 24,
+                        left: 16,
+                        child: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          minimumSize: const Size(52, 52),
+                          color: const Color(0xAA1B2F22),
+                          borderRadius: BorderRadius.circular(20),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              CupertinoPageRoute(
+                                builder: (_) => const BackupRitualScreen(),
                               ),
-                            ),
-                          ],
+                            );
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🪏', style: TextStyle(fontSize: 24)),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Respaldar ahora',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFF5FAFF),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      right: 16,
-                      bottom: 24,
-                      child: CupertinoButton(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 12,
-                        ),
-                        minimumSize: const Size(52, 52),
-                        color: const Color(0xAA1B2F22),
-                        borderRadius: BorderRadius.circular(20),
-                        onPressed: _isReadOnlyMode || vm.nextQuestion == null
-                            ? null
-                            : () async {
-                                await Navigator.of(context).push(
-                                  CupertinoPageRoute(
-                                    builder: (_) => CaptureScreen(
-                                      question: vm.nextQuestion!,
+                    if (!_isReadOnlyMode)
+                      Positioned(
+                        right: 16,
+                        bottom: 24,
+                        child: CupertinoButton(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          minimumSize: const Size(52, 52),
+                          color: const Color(0xAA1B2F22),
+                          borderRadius: BorderRadius.circular(20),
+                          onPressed: vm.nextQuestion == null
+                              ? null
+                              : () async {
+                                  await Navigator.of(context).push(
+                                    CupertinoPageRoute(
+                                      builder: (_) => CaptureScreen(
+                                        question: vm.nextQuestion!,
+                                      ),
                                     ),
-                                  ),
-                                );
-                                await _refresh();
-                              },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('🚿', style: TextStyle(fontSize: 24)),
-                            const SizedBox(width: 8),
-                            Text(
-                              _isReadOnlyMode ? 'Solo lectura' : 'Responder',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFFF5FAFF),
+                                  );
+                                  await _refresh();
+                                },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🚿', style: TextStyle(fontSize: 24)),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Responder',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFF5FAFF),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
                     QuestionOverlay(text: questionText),
                   ],
                 );
