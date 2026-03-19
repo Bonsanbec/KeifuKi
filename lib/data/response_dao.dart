@@ -19,7 +19,7 @@ class ResponseDao {
   static Future<List<ResponseEntry>> fetchAll() async {
     final Database db = await AppDatabase.instance;
 
-    final rows = await db.query('responses', orderBy: 'created_at ASC');
+    final rows = await db.query('responses', orderBy: 'created_at DESC');
 
     return rows.map(ResponseEntry.fromMap).toList();
   }

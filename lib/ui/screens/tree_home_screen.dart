@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
-import 'package:path/path.dart' show basename;
 
 import '../../data/harvested_memory_dao.dart';
 import '../../data/response_dao.dart';
@@ -12,7 +11,6 @@ import '../../domain/tree_projection.dart';
 import '../../services/app_data_runtime.dart';
 import '../../services/notification_service.dart';
 import '../../services/question_selector.dart';
-import '../../services/snapshot_service.dart';
 import '../../services/tree_projection_service.dart';
 import '../painters/procedural_tree_painter.dart';
 import '../painters/time_sky_painter.dart';
@@ -221,198 +219,6 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
       ),
     );
     await _refresh();
-  }
-
-  Future<void> _openDataActions() async {
-    await showCupertinoModalPopup<void>(
-      context: context,
-      builder: (context) {
-        return CupertinoActionSheet(
-          title: const Text('Snapshots'),
-          message: const Text(
-            'Puedes crear un respaldo, abrir un snapshot en modo visor o reemplazar todos los datos con una importación completa.',
-          ),
-          actions: [
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(this.context).push(
-                  CupertinoPageRoute(
-                    builder: (_) => const BackupRitualScreen(),
-                  ),
-                );
-              },
-              child: const Text('Crear respaldo'),
-            ),
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _openSnapshotViewer();
-              },
-              child: const Text('Open Snapshot (Viewer)'),
-            ),
-            CupertinoActionSheetAction(
-              isDestructiveAction: true,
-              onPressed: () {
-                Navigator.of(context).pop();
-                _importSnapshot();
-              },
-              child: const Text('Import Snapshot (Replace Data)'),
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _openSnapshotViewer() async {
-    final selection = await SnapshotService.pickSnapshotZip();
-    if (selection == null || !mounted) return;
-
-    _showBlockingProgress('Abriendo snapshot…');
-
-    SnapshotPackage? snapshot;
-    final AppDataSource previousSource = await AppDataRuntime.currentSource();
-
-    try {
-      snapshot = await SnapshotService.extractSnapshot(selection.zipPath);
-      await AppDataRuntime.switchTo(snapshot.toViewerDataSource());
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      await Navigator.of(
-        context,
-      ).push(CupertinoPageRoute(builder: (_) => const TreeHomeScreen()));
-    } on SnapshotFormatException catch (error) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        await _showMessage(title: 'Snapshot inválido', message: error.message);
-      }
-    } catch (_) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        await _showMessage(
-          title: 'No pudimos abrir el snapshot',
-          message: 'Verifica el archivo ZIP e inténtalo de nuevo.',
-        );
-      }
-    } finally {
-      await AppDataRuntime.switchTo(previousSource);
-      if (snapshot != null && await snapshot.rootDirectory.exists()) {
-        await snapshot.rootDirectory.delete(recursive: true);
-      }
-      if (mounted) {
-        await _refresh();
-      }
-    }
-  }
-
-  Future<void> _importSnapshot() async {
-    final selection = await SnapshotService.pickSnapshotZip();
-    if (selection == null || !mounted) return;
-
-    final bool confirmed = await _confirmImport(basename(selection.zipPath));
-    if (!confirmed || !mounted) return;
-
-    _showBlockingProgress('Importando snapshot…');
-
-    try {
-      final result = await SnapshotService.importSnapshot(selection.zipPath);
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      await _refresh();
-      await _showMessage(
-        title: 'Importación completada',
-        message:
-            'Los datos actuales fueron reemplazados por ${result.snapshotName}.',
-      );
-    } on SnapshotFormatException catch (error) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        await _showMessage(title: 'Snapshot inválido', message: error.message);
-      }
-    } catch (_) {
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop();
-        await _showMessage(
-          title: 'Importación incompleta',
-          message:
-              'No pudimos reemplazar los datos actuales. El dataset previo se mantuvo.',
-        );
-      }
-    }
-  }
-
-  void _showBlockingProgress(String message) {
-    unawaited(
-      showCupertinoDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return CupertinoAlertDialog(
-            content: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Column(
-                children: [
-                  const CupertinoActivityIndicator(radius: 14),
-                  const SizedBox(height: 14),
-                  Text(message),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Future<bool> _confirmImport(String snapshotName) async {
-    final result = await showCupertinoDialog<bool>(
-      context: context,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: const Text('Reemplazar datos'),
-          content: Text(
-            'Importar $snapshotName borrará la base local y reemplazará toda la carpeta media.',
-          ),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancelar'),
-            ),
-            CupertinoDialogAction(
-              isDestructiveAction: true,
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Importar'),
-            ),
-          ],
-        );
-      },
-    );
-
-    return result ?? false;
-  }
-
-  Future<void> _showMessage({required String title, required String message}) {
-    return showCupertinoDialog<void>(
-      context: context,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -635,7 +441,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                             border: Border.all(color: const Color(0x80E4F0FF)),
                           ),
                           child: const Text(
-                            'Snapshot Viewer · Solo lectura',
+                            'Respaldo abierto · Solo lectura',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 14,
@@ -672,15 +478,23 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                         minimumSize: const Size(52, 52),
                         color: const Color(0xAA1B2F22),
                         borderRadius: BorderRadius.circular(20),
-                        onPressed: _isReadOnlyMode ? null : _openDataActions,
+                        onPressed: _isReadOnlyMode
+                            ? null
+                            : () {
+                                Navigator.of(context).push(
+                                  CupertinoPageRoute(
+                                    builder: (_) => const BackupRitualScreen(),
+                                  ),
+                                );
+                              },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Text('🪏', style: TextStyle(fontSize: 24)),
                             const SizedBox(width: 8),
-                            Text(
-                              _isReadOnlyMode ? 'Visor' : 'Snapshots',
-                              style: const TextStyle(
+                            const Text(
+                              'Respaldar ahora',
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFFF5FAFF),
