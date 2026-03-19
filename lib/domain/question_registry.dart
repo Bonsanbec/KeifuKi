@@ -1076,8 +1076,7 @@ class QuestionRegistry {
     ),
     Question(
       id: 'legacy_secret_pride',
-      text:
-          '¿Qué logro casi nunca mencionas?',
+      text: '¿Qué logro casi nunca mencionas?',
       category: 'legacy',
     ),
     Question(
@@ -1495,6 +1494,179 @@ class QuestionRegistry {
           'Si tuvieras que describir cómo estás hoy en una frase, ¿cuál sería?',
       category: 'present',
       repeatable: true,
+    ),
+    Question(
+      id: 'cognitive_error_detection',
+      text: '¿Cómo sabes que estás equivocado cuando nadie te lo dice?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'cognitive_error_type_bias',
+      text:
+          '¿Qué tipo de error te cuesta más reconocer: el de cálculo o el de juicio?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'cognitive_ignored_information',
+      text:
+          '¿Qué información ignoras deliberadamente para poder seguir funcionando?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'cognitive_projection_pattern',
+      text:
+          '¿Qué patrón sueles ver en otros que rara vez reconoces en ti mismo?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'belief_change_conditions',
+      text:
+          '¿Qué condiciones tienen que cumplirse para que cambies de opinión de verdad?',
+      category: 'values',
+    ),
+    Question(
+      id: 'intrinsic_problem_interest',
+      text:
+          '¿Qué tipo de problema te resulta naturalmente interesante aunque no te beneficie?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'value_conflict_resolution',
+      text:
+          '¿Qué haces cuando dos valores tuyos entran en conflicto real y no puedes satisfacer ambos?',
+      category: 'values',
+    ),
+    Question(
+      id: 'decision_review_frequency',
+      text:
+          '¿Qué tan seguido revisas decisiones pasadas con intención de corregirte, no de justificarte?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'thinking_explainability_limit',
+      text:
+          '¿Qué parte de tu forma de pensar consideras más difícil de explicar a otros?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'trust_signal_heuristics',
+      text:
+          '¿Qué señales usas para confiar en alguien cuando no tienes evidencia suficiente?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'capacity_for_harm_awareness',
+      text:
+          '¿Qué tipo de daño sabes que podrías causar, pero eliges no ejercer?',
+      category: 'values',
+    ),
+    Question(
+      id: 'strategic_self_activation',
+      text:
+          '¿En qué situaciones te vuelves más calculador de lo que te gustaría admitir?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'internal_opacity_boundary',
+      text:
+          '¿Qué parte de ti mantienes inaccesible incluso para quienes confían en ti?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'intentional_morality_instance',
+      text: '¿Cuándo has actuado correctamente por decisión y no por inercia?',
+      category: 'values',
+    ),
+    Question(
+      id: 'transparency_cost',
+      text:
+          '¿Qué perderías si fueras completamente transparente con los demás?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'decision_timing_strategy',
+      text: '¿Cómo decides cuándo actuar rápido y cuándo esperar?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'deliberate_opportunity_loss',
+      text: '¿Qué oportunidades has dejado pasar deliberadamente y por qué?',
+      category: 'life',
+    ),
+    Question(
+      id: 'irreversibility_threshold',
+      text:
+          '¿Qué distingue para ti una decisión irreversible de una que puedes ajustar después?',
+      category: 'values',
+    ),
+    Question(
+      id: 'sufficient_information_threshold',
+      text: '¿Cómo reconoces que ya tienes suficiente información para actuar?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'internal_model_of_others',
+      text:
+          '¿Cómo construyes una idea de cómo es alguien cuando aún lo conoces poco?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'cognitive_energy_allocation',
+      text: '¿En qué decides gastar tu atención y en qué decides no hacerlo?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'uncertainty_tolerance',
+      text:
+          '¿Qué nivel de incertidumbre puedes tolerar antes de sentir la necesidad de actuar?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'self_correction_trigger',
+      text:
+          '¿Qué evento o señal suele hacerte detenerte y replantear lo que estás haciendo?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'hidden_motivation_detection',
+      text:
+          '¿Cómo detectas cuando tus propias motivaciones no son del todo claras?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'cognitive_blindspot_awareness',
+      text:
+          '¿Sospechas que tienes algún punto ciego en tu forma de pensar? ¿Cuál podría ser?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'decision_regret_structure',
+      text: '¿Qué hace que una decisión te genere arrepentimiento duradero?',
+      category: 'life',
+    ),
+    Question(
+      id: 'predictive_model_failure',
+      text:
+          '¿Recuerdas una ocasión en la que tu lectura de una persona fue completamente incorrecta?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'self_consistency_pressure',
+      text:
+          '¿Sientes la necesidad de ser consistente con lo que has dicho o hecho antes, incluso si ya no estás de acuerdo?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'internal_standard_origin',
+      text:
+          '¿De dónde crees que provienen los estándares con los que te evalúas?',
+      category: 'values',
+    ),
+    Question(
+      id: 'cognitive_tradeoff_awareness',
+      text:
+          '¿Qué estás sacrificando cuando decides optimizar un área de tu vida sobre otra?',
+      category: 'values',
     ),
   ];
 
