@@ -9,6 +9,7 @@ import '../../data/response_dao.dart';
 import '../../domain/question.dart';
 import '../../domain/question_registry.dart';
 import '../../domain/response.dart';
+import '../../services/app_data_runtime.dart';
 
 class ResponseViewerScreen extends StatefulWidget {
   final ResponseEntry response;
@@ -51,6 +52,9 @@ class _ResponseViewerScreenState extends State<ResponseViewerScreen> {
   }
 
   Future<void> _markReviewed() async {
+    if (AppDataRuntime.isReadOnlySync()) {
+      return;
+    }
     await ResponseDao.markReviewed(
       responseId: widget.response.id,
       reviewedAt: DateTime.now(),

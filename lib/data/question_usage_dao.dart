@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'database.dart';
 import '../services/question_selector.dart';
+import '../services/app_data_runtime.dart';
 
 class QuestionUsageDao {
   static Future<Map<String, QuestionUsage>> fetchAll() async {
@@ -28,6 +29,7 @@ class QuestionUsageDao {
   }
 
   static Future<void> recordAnswer(String questionId) async {
+    _ensureWritable();
     final Database db = await AppDatabase.instance;
 
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -58,5 +60,11 @@ class QuestionUsageDao {
         );
       }
     });
+  }
+
+  static void _ensureWritable() {
+    if (AppDataRuntime.isReadOnlySync()) {
+      throw StateError('Snapshot viewer is read-only.');
+    }
   }
 }

@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
+import 'package:path/path.dart' show basename;
 
 import '../../data/harvested_memory_dao.dart';
 import '../../data/response_dao.dart';
 import '../../data/system_state_dao.dart';
 import '../../domain/response.dart';
 import '../../domain/tree_projection.dart';
+import '../../services/app_data_runtime.dart';
 import '../../services/notification_service.dart';
 import '../../services/question_selector.dart';
+import '../../services/snapshot_service.dart';
 import '../../services/tree_projection_service.dart';
 import '../painters/procedural_tree_painter.dart';
 import '../painters/time_sky_painter.dart';
@@ -48,6 +51,8 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
   Timer? _clockTimer;
   late final AnimationController _windController;
   DateTime _now = DateTime.now();
+
+  bool get _isReadOnlyMode => AppDataRuntime.isReadOnlySync();
 
   @override
   void initState() {
@@ -88,10 +93,12 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
     );
     final nextQuestion = await QuestionSelector.next();
 
-    await NotificationService.refreshWateringReminder(
-      lastWateredAt: projection.lastWateredAt,
-      identityName: projection.identityName,
-    );
+    if (!_isReadOnlyMode) {
+      await NotificationService.refreshWateringReminder(
+        lastWateredAt: projection.lastWateredAt,
+        identityName: projection.identityName,
+      );
+    }
 
     return _TreeHomeViewModel(
       projection: projection,
@@ -200,10 +207,12 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
 
     if (response == null) return;
 
-    await HarvestedMemoryDao.markHarvested(
-      responseId: responseId,
-      harvestedAt: DateTime.now(),
-    );
+    if (!_isReadOnlyMode) {
+      await HarvestedMemoryDao.markHarvested(
+        responseId: responseId,
+        harvestedAt: DateTime.now(),
+      );
+    }
 
     if (!mounted) return;
     await Navigator.of(context).push(
@@ -212,6 +221,198 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
       ),
     );
     await _refresh();
+  }
+
+  Future<void> _openDataActions() async {
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (context) {
+        return CupertinoActionSheet(
+          title: const Text('Snapshots'),
+          message: const Text(
+            'Puedes crear un respaldo, abrir un snapshot en modo visor o reemplazar todos los datos con una importación completa.',
+          ),
+          actions: [
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(this.context).push(
+                  CupertinoPageRoute(
+                    builder: (_) => const BackupRitualScreen(),
+                  ),
+                );
+              },
+              child: const Text('Crear respaldo'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _openSnapshotViewer();
+              },
+              child: const Text('Open Snapshot (Viewer)'),
+            ),
+            CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              onPressed: () {
+                Navigator.of(context).pop();
+                _importSnapshot();
+              },
+              child: const Text('Import Snapshot (Replace Data)'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openSnapshotViewer() async {
+    final selection = await SnapshotService.pickSnapshotZip();
+    if (selection == null || !mounted) return;
+
+    _showBlockingProgress('Abriendo snapshot…');
+
+    SnapshotPackage? snapshot;
+    final AppDataSource previousSource = await AppDataRuntime.currentSource();
+
+    try {
+      snapshot = await SnapshotService.extractSnapshot(selection.zipPath);
+      await AppDataRuntime.switchTo(snapshot.toViewerDataSource());
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await Navigator.of(
+        context,
+      ).push(CupertinoPageRoute(builder: (_) => const TreeHomeScreen()));
+    } on SnapshotFormatException catch (error) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        await _showMessage(title: 'Snapshot inválido', message: error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        await _showMessage(
+          title: 'No pudimos abrir el snapshot',
+          message: 'Verifica el archivo ZIP e inténtalo de nuevo.',
+        );
+      }
+    } finally {
+      await AppDataRuntime.switchTo(previousSource);
+      if (snapshot != null && await snapshot.rootDirectory.exists()) {
+        await snapshot.rootDirectory.delete(recursive: true);
+      }
+      if (mounted) {
+        await _refresh();
+      }
+    }
+  }
+
+  Future<void> _importSnapshot() async {
+    final selection = await SnapshotService.pickSnapshotZip();
+    if (selection == null || !mounted) return;
+
+    final bool confirmed = await _confirmImport(basename(selection.zipPath));
+    if (!confirmed || !mounted) return;
+
+    _showBlockingProgress('Importando snapshot…');
+
+    try {
+      final result = await SnapshotService.importSnapshot(selection.zipPath);
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await _refresh();
+      await _showMessage(
+        title: 'Importación completada',
+        message:
+            'Los datos actuales fueron reemplazados por ${result.snapshotName}.',
+      );
+    } on SnapshotFormatException catch (error) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        await _showMessage(title: 'Snapshot inválido', message: error.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        await _showMessage(
+          title: 'Importación incompleta',
+          message:
+              'No pudimos reemplazar los datos actuales. El dataset previo se mantuvo.',
+        );
+      }
+    }
+  }
+
+  void _showBlockingProgress(String message) {
+    unawaited(
+      showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return CupertinoAlertDialog(
+            content: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                children: [
+                  const CupertinoActivityIndicator(radius: 14),
+                  const SizedBox(height: 14),
+                  Text(message),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<bool> _confirmImport(String snapshotName) async {
+    final result = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: const Text('Reemplazar datos'),
+          content: Text(
+            'Importar $snapshotName borrará la base local y reemplazará toda la carpeta media.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            CupertinoDialogAction(
+              isDestructiveAction: true,
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Importar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
+  Future<void> _showMessage({required String title, required String message}) {
+    return showCupertinoDialog<void>(
+      context: context,
+      builder: (context) {
+        return CupertinoAlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -383,21 +584,31 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                         minimumSize: const Size(52, 52),
                         color: const Color(0xC0182D4A),
                         borderRadius: BorderRadius.circular(22),
-                        onPressed: () async {
-                          await Navigator.of(context).push(
-                            CupertinoPageRoute(
-                              builder: (_) => const HarvestedMemoriesScreen(),
-                            ),
-                          );
-                          await _refresh();
-                        },
+                        onPressed: _isReadOnlyMode
+                            ? () async {
+                                await Navigator.of(context).maybePop();
+                              }
+                            : () async {
+                                await Navigator.of(context).push(
+                                  CupertinoPageRoute(
+                                    builder: (_) =>
+                                        const HarvestedMemoriesScreen(),
+                                  ),
+                                );
+                                await _refresh();
+                              },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text('🧺', style: TextStyle(fontSize: 24)),
+                            Text(
+                              _isReadOnlyMode ? '↩' : '🧺',
+                              style: const TextStyle(fontSize: 24),
+                            ),
                             const SizedBox(width: 6),
                             Text(
-                              '${vm.harvestedCount}',
+                              _isReadOnlyMode
+                                  ? 'Salir'
+                                  : '${vm.harvestedCount}',
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -408,6 +619,32 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                         ),
                       ),
                     ),
+                    if (_isReadOnlyMode)
+                      Positioned(
+                        top: 18,
+                        left: 104,
+                        right: 84,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xD91D3550),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0x80E4F0FF)),
+                          ),
+                          child: const Text(
+                            'Snapshot Viewer · Solo lectura',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFF4FAFF),
+                            ),
+                          ),
+                        ),
+                      ),
                     Positioned(
                       top: 18,
                       right: 16,
@@ -435,21 +672,15 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                         minimumSize: const Size(52, 52),
                         color: const Color(0xAA1B2F22),
                         borderRadius: BorderRadius.circular(20),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            CupertinoPageRoute(
-                              builder: (_) => const BackupRitualScreen(),
-                            ),
-                          );
-                        },
-                        child: const Row(
+                        onPressed: _isReadOnlyMode ? null : _openDataActions,
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('🪏', style: TextStyle(fontSize: 24)),
-                            SizedBox(width: 8),
+                            const Text('🪏', style: TextStyle(fontSize: 24)),
+                            const SizedBox(width: 8),
                             Text(
-                              'Respaldo',
-                              style: TextStyle(
+                              _isReadOnlyMode ? 'Visor' : 'Snapshots',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFFF5FAFF),
@@ -470,7 +701,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                         minimumSize: const Size(52, 52),
                         color: const Color(0xAA1B2F22),
                         borderRadius: BorderRadius.circular(20),
-                        onPressed: vm.nextQuestion == null
+                        onPressed: _isReadOnlyMode || vm.nextQuestion == null
                             ? null
                             : () async {
                                 await Navigator.of(context).push(
@@ -488,7 +719,7 @@ class _TreeHomeScreenState extends State<TreeHomeScreen>
                             const Text('🚿', style: TextStyle(fontSize: 24)),
                             const SizedBox(width: 8),
                             Text(
-                              'Responder',
+                              _isReadOnlyMode ? 'Solo lectura' : 'Responder',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

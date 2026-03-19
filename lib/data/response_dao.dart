@@ -2,9 +2,11 @@ import 'package:sqflite/sqflite.dart';
 
 import 'database.dart';
 import '../domain/response.dart';
+import '../services/app_data_runtime.dart';
 
 class ResponseDao {
   static Future<void> insert(ResponseEntry response) async {
+    _ensureWritable();
     final Database db = await AppDatabase.instance;
 
     await db.insert(
@@ -26,6 +28,7 @@ class ResponseDao {
     required String responseId,
     required DateTime reviewedAt,
   }) async {
+    _ensureWritable();
     final Database db = await AppDatabase.instance;
 
     await db.update(
@@ -49,5 +52,11 @@ class ResponseDao {
     );
 
     return rows.map(ResponseEntry.fromMap).toList();
+  }
+
+  static void _ensureWritable() {
+    if (AppDataRuntime.isReadOnlySync()) {
+      throw StateError('Snapshot viewer is read-only.');
+    }
   }
 }

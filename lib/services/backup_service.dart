@@ -1,7 +1,10 @@
 import 'dart:io';
+
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:archive/archive_io.dart';
+
+import '../data/database.dart';
+import 'app_data_runtime.dart';
 
 /// Responsible for creating full application backups.
 ///
@@ -16,7 +19,6 @@ import 'package:archive/archive_io.dart';
 class BackupService {
   static const String _backupFolderName = 'backups';
   static const String _databaseFileName = 'app.db';
-  static const String _mediaFolderName = 'media';
 
   /// Creates a compressed snapshot of the current app state.
   ///
@@ -24,7 +26,8 @@ class BackupService {
   static Future<String> createSnapshot({
     void Function(double progress)? onProgress,
   }) async {
-    final Directory appDir = await getApplicationDocumentsDirectory();
+    final AppDataSource liveSource = await AppDataRuntime.liveSource();
+    final Directory appDir = Directory(dirname(liveSource.mediaRootPath));
     final Directory backupDir = Directory(join(appDir.path, _backupFolderName));
 
     if (!await backupDir.exists()) {
@@ -41,9 +44,10 @@ class BackupService {
     onProgress?.call(0.05);
 
     final Archive archive = Archive();
+    await AppDatabase.close();
 
     // Add database file as 'app.db'
-    final File dbFile = File(join(appDir.path, 'data', _databaseFileName));
+    final File dbFile = File(liveSource.databasePath);
     if (await dbFile.exists()) {
       final List<int> dbBytes = await dbFile.readAsBytes();
       archive.addFile(ArchiveFile(_databaseFileName, dbBytes.length, dbBytes));
@@ -51,7 +55,7 @@ class BackupService {
     onProgress?.call(0.25);
 
     // Add media directory files recursively
-    final Directory mediaDir = Directory(join(appDir.path, _mediaFolderName));
+    final Directory mediaDir = Directory(liveSource.mediaRootPath);
     if (await mediaDir.exists()) {
       final entities = await mediaDir
           .list(recursive: true)
@@ -87,7 +91,8 @@ class BackupService {
 
   /// Lists existing local backup snapshots.
   static Future<List<FileSystemEntity>> listSnapshots() async {
-    final Directory appDir = await getApplicationDocumentsDirectory();
+    final AppDataSource liveSource = await AppDataRuntime.liveSource();
+    final Directory appDir = Directory(dirname(liveSource.mediaRootPath));
     final Directory backupDir = Directory(join(appDir.path, _backupFolderName));
 
     if (!await backupDir.exists()) {

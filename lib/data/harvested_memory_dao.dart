@@ -2,12 +2,14 @@ import 'package:sqflite/sqflite.dart';
 
 import '../domain/response.dart';
 import 'database.dart';
+import '../services/app_data_runtime.dart';
 
 class HarvestedMemoryDao {
   static Future<void> markHarvested({
     required String responseId,
     required DateTime harvestedAt,
   }) async {
+    _ensureWritable();
     final Database db = await AppDatabase.instance;
 
     await db.insert('harvested_memories', {
@@ -45,5 +47,11 @@ class HarvestedMemoryDao {
     return rows
         .map((row) => ResponseEntry.fromMap(row))
         .toList(growable: false);
+  }
+
+  static void _ensureWritable() {
+    if (AppDataRuntime.isReadOnlySync()) {
+      throw StateError('Snapshot viewer is read-only.');
+    }
   }
 }

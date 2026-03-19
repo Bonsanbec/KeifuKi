@@ -1,5 +1,8 @@
 import 'dart:convert';
 
+import '../services/app_data_runtime.dart';
+import '../services/media_store.dart';
+
 class ResponseGrowthMetadata {
   final int depth;
   final int emotionalWeight;
@@ -88,7 +91,10 @@ class ResponseEntry {
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),
       mediaType: map['media_type'] as String,
       durationSeconds: map['duration_seconds'] as int?,
-      filePath: map['file_path'] as String,
+      filePath: MediaStore.resolveStoredPathForSource(
+        storedPath: map['file_path'] as String,
+        mediaRootPath: AppDataRuntime.requireCurrentSource().mediaRootPath,
+      ),
       growthMetadata: ResponseGrowthMetadata.fromJsonString(
         map['growth_metadata_json'] as String?,
       ),

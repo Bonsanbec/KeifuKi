@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 
 import 'database.dart';
 import '../domain/tree_state.dart';
+import '../services/app_data_runtime.dart';
 
 class SystemStateDao {
   static const String _plantedAtKey = 'tree.planted_at';
@@ -25,6 +26,7 @@ class SystemStateDao {
   }
 
   static Future<void> set(String key, String value) async {
+    _ensureWritable();
     final Database db = await AppDatabase.instance;
 
     await db.insert('system_state', {
@@ -57,6 +59,9 @@ class SystemStateDao {
       structuralMarkers: const [],
       lastWateredAt: null,
     );
+    if (AppDataRuntime.isReadOnlySync()) {
+      return initial;
+    }
     await saveTreeState(initial);
     return initial;
   }
@@ -82,6 +87,7 @@ class SystemStateDao {
   }
 
   static Future<void> saveTreeState(TreeState state) async {
+    _ensureWritable();
     await set(_growthSeedKey, state.growthSeed.toString());
 
     if (state.plantedAt != null) {
@@ -116,5 +122,11 @@ class SystemStateDao {
     final now = DateTime.now().millisecondsSinceEpoch;
     final salt = DateTime.now().microsecondsSinceEpoch;
     return ((now ^ (salt << 7)) & 0x7fffffff);
+  }
+
+  static void _ensureWritable() {
+    if (AppDataRuntime.isReadOnlySync()) {
+      throw StateError('Snapshot viewer is read-only.');
+    }
   }
 }

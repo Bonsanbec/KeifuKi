@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'migrations.dart';
+import '../services/app_data_runtime.dart';
 
 /// Central SQLite access point.
 ///
@@ -12,23 +12,36 @@ import 'migrations.dart';
 /// No other part of the app should open or close the database.
 class AppDatabase {
   static Database? _db;
+  static String? _currentPath;
+  static bool? _currentReadOnly;
 
   /// Returns the singleton database instance.
   static Future<Database> get instance async {
-    if (_db != null) return _db!;
-    _db = await _open();
+    final AppDataSource source = await AppDataRuntime.currentSource();
+    if (_db != null &&
+        AppDataRuntime.pathsMatch(
+          source,
+          _currentPath ?? '',
+          _currentReadOnly ?? false,
+        )) {
+      return _db!;
+    }
+
+    await close();
+    _db = await _open(source);
+    _currentPath = source.databasePath;
+    _currentReadOnly = source.isReadOnly;
     return _db!;
   }
 
-  static Future<Database> _open() async {
-    final Directory appDir = await getApplicationDocumentsDirectory();
-    final String dbPath = join(appDir.path, 'data', 'app.db');
-
+  static Future<Database> _open(AppDataSource source) async {
+    final String dbPath = source.databasePath;
     // Ensure parent directory exists
     await Directory(dirname(dbPath)).create(recursive: true);
 
     return openDatabase(
       dbPath,
+      readOnly: source.isReadOnly,
       version: Migrations.currentVersion,
       onCreate: (db, version) async {
         await _runMigrations(db, from: 0, to: version);
@@ -60,5 +73,7 @@ class AppDatabase {
       await _db!.close();
       _db = null;
     }
+    _currentPath = null;
+    _currentReadOnly = null;
   }
 }

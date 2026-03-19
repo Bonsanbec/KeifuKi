@@ -1,8 +1,9 @@
 import 'dart:io';
+
 import 'package:path/path.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '../domain/enums.dart';
+import 'app_data_runtime.dart';
 
 /// Handles physical storage of media files.
 ///
@@ -13,13 +14,10 @@ import '../domain/enums.dart';
 ///
 /// It does NOT handle recording, encoding, or permissions.
 class MediaStore {
-  static const String _mediaRoot = 'media';
-
   /// Ensures that the media directory structure exists.
   static Future<Directory> _ensureBaseDir() async {
-    final Directory appDir = await getApplicationDocumentsDirectory();
-    final Directory mediaDir =
-        Directory(join(appDir.path, _mediaRoot));
+    final AppDataSource source = await AppDataRuntime.currentSource();
+    final Directory mediaDir = Directory(source.mediaRootPath);
 
     if (!await mediaDir.exists()) {
       await mediaDir.create(recursive: true);
@@ -31,8 +29,7 @@ class MediaStore {
   /// Returns the directory for a given media type.
   static Future<Directory> _ensureTypeDir(MediaType type) async {
     final Directory base = await _ensureBaseDir();
-    final Directory typeDir =
-        Directory(join(base.path, _typeFolderName(type)));
+    final Directory typeDir = Directory(join(base.path, _typeFolderName(type)));
 
     if (!await typeDir.exists()) {
       await typeDir.create(recursive: true);
@@ -78,13 +75,39 @@ class MediaStore {
     required MediaType type,
     required File source,
   }) async {
-    final path = await generatePath(
-      responseId: responseId,
-      type: type,
-    );
+    final path = await generatePath(responseId: responseId, type: type);
 
     await source.copy(path);
     return path;
+  }
+
+  static Future<String> resolveStoredPath(String storedPath) async {
+    final AppDataSource source = await AppDataRuntime.currentSource();
+    return resolveStoredPathForSource(
+      storedPath: storedPath,
+      mediaRootPath: source.mediaRootPath,
+    );
+  }
+
+  static String resolveStoredPathForSource({
+    required String storedPath,
+    required String mediaRootPath,
+  }) {
+    final String normalizedMediaRoot = normalize(mediaRootPath);
+    final String normalizedStoredPath = normalize(storedPath);
+
+    if (!normalizedStoredPath.contains('media')) {
+      return storedPath;
+    }
+
+    final List<String> parts = split(normalizedStoredPath);
+    final int mediaIndex = parts.lastIndexOf('media');
+    if (mediaIndex == -1 || mediaIndex == parts.length - 1) {
+      return storedPath;
+    }
+
+    final String relativePath = joinAll(parts.sublist(mediaIndex + 1));
+    return join(normalizedMediaRoot, relativePath);
   }
 
   static String _typeFolderName(MediaType type) {
