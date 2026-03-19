@@ -1668,6 +1668,238 @@ class QuestionRegistry {
           '¿Qué estás sacrificando cuando decides optimizar un área de tu vida sobre otra?',
       category: 'values',
     ),
+    Question(
+      id: 'inconsistency_recent_action',
+      text:
+          '¿En qué situación reciente actuaste en contra de lo que dices creer y cómo lo justificaste en ese momento?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'past_vs_present_conflict',
+      text:
+          'Si comparas lo que pensabas hace diez años con lo que piensas hoy, ¿en qué puntos ambas versiones de ti entrarían en conflicto directo?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'real_time_silence_decision',
+      text:
+          '¿Qué decides no decir mientras estás hablando con alguien y cómo tomas esa decisión en el momento?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'prediction_error_pattern',
+      text:
+          'Cuando imaginas cómo va a reaccionar alguien, ¿en qué te basas y qué tan seguido te equivocas?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'long_term_error_persistence',
+      text:
+          '¿Qué error mantuviste durante más tiempo del que te hubiera gustado y por qué no lo corregiste antes?',
+      category: 'life',
+    ),
+    Question(
+      id: 'self_presentation_editing',
+      text:
+          '¿Qué parte de lo que muestras a otros está deliberadamente editada y con qué propósito?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'internal_justification_shift',
+      text:
+          '¿Recuerdas una situación en la que cambiaste tu explicación interna después de haber actuado?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'value_compromise_threshold',
+      text:
+          '¿Qué tendría que pasar para que traicionaras un valor que hoy consideras importante?',
+      category: 'values',
+    ),
+    Question(
+      id: 'decision_post_rationalization',
+      text: '¿En qué casos sientes que decides primero y razonas después?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'hidden_motive_detection_failure',
+      text:
+          '¿Cuándo te diste cuenta de que tus motivos reales eran distintos a los que creías?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'repeated_mistake_awareness',
+      text:
+          '¿Hay un error que sabes que repites aunque lo tengas identificado?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'emotional_override_moment',
+      text:
+          '¿Cuándo fue la última vez que una emoción anuló algo que sabías que era más razonable?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'self_deception_instance',
+      text:
+          '¿En qué situación reciente te diste cuenta de que te estabas engañando a ti mismo?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'trust_miscalculation',
+      text:
+          '¿Confiaste alguna vez en alguien que no debías o desconfiaste de alguien que sí lo merecía?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'internal_conflict_avoidance',
+      text:
+          '¿Qué conflicto interno has evitado enfrentar y cómo lo mantienes fuera de foco?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'identity_inconsistency_awareness',
+      text:
+          '¿Qué parte de tu identidad sientes que no encaja con el resto de quien eres?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'moral_exception_case',
+      text:
+          '¿En qué situación hiciste una excepción a una regla moral que normalmente respetas?',
+      category: 'values',
+    ),
+    Question(
+      id: 'decision_delay_cost',
+      text: '¿Cuándo esperar te costó más que haber actuado antes?',
+      category: 'life',
+    ),
+    Question(
+      id: 'premature_decision_cost',
+      text:
+          '¿Cuándo actuar rápido te llevó a un resultado peor del que habrías tenido esperando?',
+      category: 'life',
+    ),
+    Question(
+      id: 'internal_standard_double_bind',
+      text:
+          '¿Hay estándares que te exiges a ti mismo pero no a otros, o viceversa?',
+      category: 'values',
+    ),
+    Question(
+      id: 'self_image_protection',
+      text:
+          '¿Qué haces para proteger la imagen que tienes de ti mismo cuando algo la contradice?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'contradiction_tolerance',
+      text:
+          '¿Qué contradicción en ti mismo has aprendido a tolerar sin resolver?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'invisible_habit_pattern',
+      text:
+          '¿Qué hábito tienes que influye mucho en tu vida pero casi no notas?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'social_mask_activation',
+      text:
+          '¿En qué contextos sientes que activas una versión de ti más controlada o calculada?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'internal_dialogue_conflict',
+      text:
+          '¿Cómo suena tu diálogo interno cuando estás dividido entre dos decisiones importantes?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'failure_reinterpretation_shift',
+      text:
+          '¿Recuerdas un fracaso que con el tiempo cambiaste de significado para poder integrarlo?',
+      category: 'life',
+    ),
+    Question(
+      id: 'success_hidden_cost',
+      text: '¿Hay algún logro que haya tenido un costo que casi nadie ve?',
+      category: 'life',
+    ),
+    Question(
+      id: 'empathy_limit_case',
+      text: '¿En qué situación te costó más entender o empatizar con alguien?',
+      category: 'relationships',
+    ),
+    Question(
+      id: 'self_control_breakpoint',
+      text:
+          '¿Qué suele hacer que pierdas el control de ti mismo, aunque normalmente lo mantengas?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'rationalization_pattern',
+      text:
+          '¿Qué tipo de justificaciones usas con más frecuencia para explicar decisiones cuestionables?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'unacknowledged_envy',
+      text: '¿Hay algo que te cuesta admitir que envidias?',
+      category: 'values',
+    ),
+    Question(
+      id: 'time_wasting_awareness',
+      text:
+          '¿En qué sueles gastar tiempo sabiendo que no te acerca a lo que quieres?',
+      category: 'life',
+    ),
+    Question(
+      id: 'internal_priority_conflict',
+      text: '¿Qué prioridad dices tener pero en la práctica no sostienes?',
+      category: 'values',
+    ),
+    Question(
+      id: 'identity_performance_gap',
+      text:
+          '¿En qué situaciones sientes que interpretas un papel en lugar de actuar con naturalidad?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'memory_selective_bias',
+      text: '¿Qué tipo de recuerdos tiendes a conservar y cuáles a minimizar?',
+      category: 'meta',
+    ),
+    Question(
+      id: 'feedback_resistance_point',
+      text:
+          '¿Qué tipo de crítica te cuesta más aceptar aunque pueda ser válida?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'internal_limit_recognition',
+      text:
+          '¿Qué límite personal has reconocido pero aún no has logrado cambiar?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'decision_identity_attachment',
+      text:
+          '¿Qué decisiones te cuesta revisar porque ya forman parte de cómo te defines?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'hidden_dependency_pattern',
+      text: '¿De qué dependes más de lo que te gustaría admitir?',
+      category: 'identity',
+    ),
+    Question(
+      id: 'uncertain_belief_core',
+      text:
+          '¿Qué creencia importante sostienes aunque no estés completamente seguro de que sea cierta?',
+      category: 'values',
+    ),
   ];
 
   /// Convenience lookup by id.
