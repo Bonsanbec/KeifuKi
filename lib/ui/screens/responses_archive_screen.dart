@@ -16,6 +16,8 @@ class ResponsesArchiveScreen extends StatefulWidget {
 }
 
 class _ResponsesArchiveScreenState extends State<ResponsesArchiveScreen> {
+  bool get _isReadOnlyMode => AppDataRuntime.isReadOnlySync();
+
   IconData _iconForMediaType(String mediaType) {
     switch (mediaType) {
       case 'audio':
@@ -320,73 +322,75 @@ class _ResponsesArchiveScreenState extends State<ResponsesArchiveScreen> {
                             ),
                           ),
                         ),
-                      const SizedBox(height: 18),
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
-                        decoration: BoxDecoration(
-                          color: const Color(0x5E0D1A2D),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: const Color(0x335D7FA8)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Text(
-                              '¿Tienes un archivo de memoria?',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFF1F8FF),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Puedes explorar el archivo de un conocido o usar uno propio para recuperar tu memoria.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                height: 1.35,
-                                color: Color(0xFFD4E5FF),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            CupertinoButton(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              color: const Color(0x8030476B),
-                              borderRadius: BorderRadius.circular(14),
-                              onPressed: _openBackupViewer,
-                              child: const Text(
-                                'Explorar archivo de memoria',
+                      if (!_isReadOnlyMode) ...[
+                        const SizedBox(height: 18),
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0x5E0D1A2D),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0x335D7FA8)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const Text(
+                                '¿Tienes un archivo de memoria?',
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFF3F9FF),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFF1F8FF),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            CupertinoButton(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              color: const Color(0x553F2430),
-                              borderRadius: BorderRadius.circular(14),
-                              onPressed: _replaceDataFromFile,
-                              child: const Text(
-                                'Reemplazar datos con archivo de memoria',
+                              const SizedBox(height: 6),
+                              const Text(
+                                'Puedes explorar el archivo de un conocido o usar uno propio para recuperar tu memoria.',
                                 style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFF3F9FF),
+                                  fontSize: 14,
+                                  height: 1.35,
+                                  color: Color(0xFFD4E5FF),
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 14),
+                              CupertinoButton(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                color: const Color(0x8030476B),
+                                borderRadius: BorderRadius.circular(14),
+                                onPressed: _openBackupViewer,
+                                child: const Text(
+                                  'Explorar archivo de memoria',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFF3F9FF),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              CupertinoButton(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                color: const Color(0x553F2430),
+                                borderRadius: BorderRadius.circular(14),
+                                onPressed: _replaceDataFromFile,
+                                child: const Text(
+                                  'Reemplazar datos con archivo de memoria',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFF3F9FF),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   );
                 },
